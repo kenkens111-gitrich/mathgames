@@ -1,4 +1,4 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -10,9 +10,25 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-touch-callout: none; }
-    body { margin: 0; padding: 0; overflow: hidden; background-color: #4a8a2c; touch-action: none; transition: background-color 0.5s; }
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap');
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      user-select: none; 
+      -webkit-touch-callout: none; 
+      font-family: 'Fredoka One', 'M PLUS Rounded 1c', sans-serif;
+    }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      overflow: hidden; 
+      background-color: #4a8a2c; 
+      touch-action: none; 
+      transition: background-color 0.5s; 
+    }
+    #root { height: 100vh; height: 100dvh; }
   </style>
 </head>
 <body>
@@ -24,13 +40,18 @@
     const TIME_LIMIT_30 = 30;
     const SUDDEN_DEATH_PER_Q = 5;
 
+    // --- 音声エンジン ---
     let audioCtx = null;
+    let isSoundEnabled = true;
+
     function getCtx() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
       return audioCtx;
     }
+
     function playTone(freq, type = "sine", duration = 0.12, vol = 0.15, delay = 0) {
+      if (!isSoundEnabled) return;
       try {
         const ctx = getCtx();
         const osc = ctx.createOscillator();
@@ -43,6 +64,7 @@
         osc.start(t); osc.stop(t + duration);
       } catch {}
     }
+
     const playClick = () => playTone(880, "square", 0.05, 0.05);
     const playCorrect = () => { playTone(523, "sine", 0.1, 0.2); playTone(659, "sine", 0.1, 0.2, 0.08); playTone(784, "sine", 0.15, 0.25, 0.16); };
     const playWrong = () => { playTone(200, "sawtooth", 0.08, 0.15); playTone(150, "sawtooth", 0.12, 0.15, 0.08); };
@@ -60,14 +82,16 @@
       play1: { notes: [261, 293, 329, 349, 392, 349, 329, 293], tempo: 220 }, 
       death: { notes: [329, 0, 392, 0, 440, 0, 392, 0], tempo: 150 }, 
     };
+
     function playBGM(type) {
+      if (!isSoundEnabled) { stopBGM(); return; }
       if (currentBgmType === type) return;
       stopBGM();
       if (!type || !BGM_DATA[type]) return;
       bgmRunning = true; currentBgmType = type; bgmStep = 0;
       const track = BGM_DATA[type];
       const step = () => {
-        if (!bgmRunning || currentBgmType !== type) return;
+        if (!bgmRunning || currentBgmType !== type || !isSoundEnabled) return;
         const freq = track.notes[bgmStep % track.notes.length];
         if (freq > 0) playTone(freq, "triangle", track.tempo / 1000 * 0.8, 0.03, 0);
         bgmStep++; bgmTimeout = setTimeout(step, track.tempo);
@@ -131,74 +155,52 @@
       return label;
     }
 
-    // ─── バーチャルキーボード ──────────────────────────────────────────
     const JapaneseKeyboard = ({ value, onChange, onSet }) => {
       const [isKatakana, setIsKatakana] = useState(false);
       const [activeGroup, setActiveGroup] = useState(null);
-
-      const groupsHira = ["あ","か","さ","た","な","は","ま","や","ら","わ"];
-      const groupsKata = ["ア","カ","サ","タ","ナ","ハ","マ","ヤ","ラ","ワ"];
-      const groupsDisplay = isKatakana ? groupsKata : groupsHira;
-
-      const kanaGroupsHira = [
-        ['あ','い','う','え','お'],['か','き','く','け','こ'],['さ','し','す','せ','そ'],['た','ち','つ','て','と'],['な','に','ぬ','ね','の'],
-        ['は','ひ','ふ','へ','ほ'],['ま','み','む','め','も'],['や','（','ゆ','）','よ'],['ら','り','る','れ','ろ'],['わ','を','ん','ー','　']
-      ];
-      const kanaGroupsKata = [
+      const groupsDisplay = isKatakana ? ["ア","カ","サ","タ","ナ","ハ","マ","ヤ","ラ","ワ"] : ["あ","か","さ","た","な","は","ま","や","ら","わ"];
+      const handleChar = (char) => { if (value.length < 8) onChange(value + char); setActiveGroup(null); };
+      const kanaGroups = isKatakana ? [
         ['ア','イ','ウ','エ','オ'],['カ','キ','ク','ケ','コ'],['サ','シ','ス','セ','ソ'],['タ','チ','ツ','テ','ト'],['ナ','ニ','ヌ','ネ','ノ'],
         ['ハ','ヒ','フ','ヘ','ホ'],['マ','ミ','ム','メ','モ'],['ヤ','（','ユ','）','ヨ'],['ラ','リ','ル','レ','ロ'],['ワ','ヲ','ン','ー','　']
+      ] : [
+        ['あ','い','う','え','お'],['か','き','く','け','こ'],['さ','し','す','せ','そ'],['た','ち','つ','て','と'],['な','に','ぬ','ね','の'],
+        ['は','ひ','ふ','へ','ほ'],['ま','み','む','め','も'],['や','（','ユ','）','よ'],['ら','り','る','れ','ろ'],['わ','を','ん','ー','　']
       ];
-      const kanaGroups = isKatakana ? kanaGroupsKata : kanaGroupsHira;
-
-      const handleChar = (char) => { if (value.length < 8) onChange(value + char); setActiveGroup(null); };
-
-      const handleTransform = () => {
-        if (value === "") return;
-        const last = value.slice(-1);
-        const map = {
-          'あ':'ぁ','い':'ぃ','う':'ぅ','え':'ぇ','お':'ぉ','か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご','さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ','た':'だ','ち':'ぢ','つ':'っ','て':'で','と':'ど','は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ','ば':'ぱ','び':'ぴ','ぶ':'ぷ','べ':'ぺ','ぼ':'ぽ','や':'ゃ','ゆ':'ゅ','よ':'ょ','わ':'ゎ',
-          'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','が':'か','ぎ':'き','ぐ':'く','げ':'け','ご':'こ','ざ':'さ','じ':'し','ず':'す','ぜ':'せ','ぞ':'そ','だ':'た','ぢ':'ち','っ':'つ','で':'て','ど':'と','ば':'は','ぱ':'は','ぴ':'ひ','ぷ':'ふ','べ':'へ','ぽ':'ほ','ゃ':'や','ゅ':'ゆ','ょ':'よ','ゎ':'わ',
-          'ア':'ァ','イ':'ィ','ウ':'ゥ','エ':'ェ','オ':'ォ','カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ','タ':'ダ','チ':'ヂ','ツ':'ッ','テ':'デ','ト':'ド','ハ':'ば','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','バ':'パ','ビ':'ピ','ブ':'プ','べ':'ペ','ボ':'ポ','ヤ':'ャ','ユ':'ュ','ヨ':'ョ','ワ':'ヮ',
-          'ァ':'ア','ィ':'イ','ゥ':'ウ','ェ':'エ','ォ':'オ','ガ':'カ','ギ':'キ','ぐ':'ク','げ':'ケ','ご':'コ','ざ':'サ','じ':'シ','ず':'ス','ぜ':'セ','ぞ':'ソ','だ':'タ','ぢ':'チ','っ':'つ','で':'て','ど':'と','ば':'は','ぱ':'は','ぴ':'ひ','ぷ':'ふ','べ':'へ','ぽ':'ほ','ゃ':'や','ゅ':'ユ','ょ':'ヨ','ヮ':'ワ'
-        };
-        if (map[last]) onChange(value.slice(0, -1) + map[last]);
-      };
-
       return (
-        <div className="virtual-kb" style={{ width: '100%', background:'#fffbe8', borderRadius: 16, padding: 10, border:'3px solid #c8a444', marginTop: 10, position:'relative' }}>
+        <div className="virtual-kb" style={{ width: '100%', background:'#fffbe8', borderRadius: 16, padding: 10, border:'3px solid #c8a444', marginTop: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
             {groupsDisplay.map((g, i) => (
               <div key={i} style={{ position: 'relative' }}>
-                <button onPointerDown={(e) => { e.preventDefault(); setActiveGroup(activeGroup === i ? null : i); }} style={{ width:'100%', height: 40, borderRadius: 8, border:'2.5px solid #d4b86a', background: activeGroup === i ? '#ffd200' : 'white', fontSize:'1rem', fontWeight:900, color:'#7a4500' }}>{g}</button>
+                <button onPointerDown={(e) => { e.preventDefault(); setActiveGroup(activeGroup === i ? null : i); }} style={{ width:'100%', height: 40, borderRadius: 8, border:'2.5px solid #d4b86a', background: activeGroup === i ? '#ffd200' : 'white', fontSize:'1rem', fontWeight:900 }}>{g}</button>
                 {activeGroup === i && (
-                  <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -50%)', background:'rgba(255,255,255,0.98)', padding:8, borderRadius:15, display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:5, border:'3px solid #ffd200', zIndex:2000, boxShadow:'0 4px 15px rgba(0,0,0,0.2)' }}>
-                    <div /><button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][1]); }} style={{ width:45, height:45, borderRadius:10, border:'2px solid #d4b86a', background:'white', fontSize:'1.1rem', fontWeight:900 }}>{kanaGroups[i][1]}</button><div />
-                    <button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][2]); }} style={{ width:45, height:45, borderRadius:10, border:'2px solid #d4b86a', background:'white', fontSize:'1.1rem', fontWeight:900 }}>{kanaGroups[i][2]}</button>
-                    <button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][0]); }} style={{ width:45, height:45, borderRadius:10, border:'2px solid #ffd200', background:'#fffbe8', fontSize:'1.1rem', fontWeight:900 }}>{kanaGroups[i][0]}</button>
-                    <button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][3]); }} style={{ width:45, height:45, borderRadius:10, border:'2px solid #d4b86a', background:'white', fontSize:'1.1rem', fontWeight:900 }}>{kanaGroups[i][3]}</button>
-                    <div /><button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][4]); }} style={{ width:45, height:45, borderRadius:10, border:'2px solid #d4b86a', background:'white', fontSize:'1.1rem', fontWeight:900 }}>{kanaGroups[i][4]}</button><div />
+                  <div style={{ position:'absolute', top:'-150%', left:'50%', transform:'translateX(-50%)', background:'white', padding:8, borderRadius:15, display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:5, border:'3px solid #ffd200', zIndex:2000 }}>
+                    <div /><button onPointerDown={() => handleChar(kanaGroups[i][1])} style={{ width:45, height:45 }}>{kanaGroups[i][1]}</button><div />
+                    <button onPointerDown={() => handleChar(kanaGroups[i][2])} style={{ width:45, height:45 }}>{kanaGroups[i][2]}</button>
+                    <button onPointerDown={() => handleChar(kanaGroups[i][0])} style={{ width:45, height:45, background:'#fffbe8' }}>{kanaGroups[i][0]}</button>
+                    <button onPointerDown={() => handleChar(kanaGroups[i][3])} style={{ width:45, height:45 }}>{kanaGroups[i][3]}</button>
+                    <div /><button onPointerDown={() => handleChar(kanaGroups[i][4])} style={{ width:45, height:45 }}>{kanaGroups[i][4]}</button><div />
                   </div>
                 )}
               </div>
             ))}
-            <button onPointerDown={(e) => { e.preventDefault(); setIsKatakana(!isKatakana); }} style={{ height: 40, borderRadius: 8, border:'2.5px solid #d4b86a', background: '#eee', fontSize:'0.8rem', fontWeight:900 }}>あ/ア</button>
-            <button onPointerDown={(e) => { e.preventDefault(); handleTransform(); }} style={{ height: 40, borderRadius: 8, border:'2.5px solid #d4b86a', background: '#eee', fontSize:'0.8rem', fontWeight:900 }}>゛゜小</button>
-            <button onPointerDown={(e) => { e.preventDefault(); onChange(value.slice(0,-1)); }} style={{ height: 40, borderRadius: 8, border:'2.5px solid #d4b86a', background: '#eee', fontSize:'0.8rem', fontWeight:900 }}>消</button>
-            <button onPointerDown={(e) => { e.preventDefault(); onSet(); }} style={{ height: 40, borderRadius: 8, border:'2.5px solid #d4b86a', background: '#ff9f43', color:'white', fontSize:'0.8rem', fontWeight:900 }}>OK</button>
+            <button onPointerDown={() => setIsKatakana(!isKatakana)} style={{ height: 40, background: '#eee' }}>あ/ア</button>
+            <button onPointerDown={() => onChange(value.slice(0,-1))} style={{ height: 40, background: '#eee' }}>消</button>
+            <button onPointerDown={onSet} style={{ height: 40, background: '#ff9f43', color:'white' }}>OK</button>
           </div>
         </div>
       );
     };
 
     const ToggleButton = ({ options, value, onChange }) => {
-      const currentIndex = options.findIndex(o => o.v === value);
-      const currentOption = options[currentIndex >= 0 ? currentIndex : 0];
+      const idx = options.findIndex(o => o.v === value);
+      const opt = options[idx >= 0 ? idx : 0];
       return (
-        <button onPointerDown={(e) => { e.preventDefault(); playClick(); onChange(options[(currentIndex + 1) % options.length].v); }} className="toggle-btn">
+        <button onPointerDown={(e) => { e.preventDefault(); playClick(); onChange(options[(idx + 1) % options.length].v); }} className="toggle-btn">
           <span className="toggle-arrow">＜</span>
           <div className="toggle-content">
-            {currentOption.e && <span className="toggle-emoji">{currentOption.e}</span>}
-            <span className="toggle-label">{currentOption.l}</span>
+            {opt.e && <span className="toggle-emoji">{opt.e}</span>}
+            <span className="toggle-label">{opt.l}</span>
           </div>
           <span className="toggle-arrow">＞</span>
         </button>
@@ -207,20 +209,25 @@
 
     const GlobalMenu = ({ screen, setScreen }) => {
       const [open, setOpen] = useState(false);
-      const isDuo = screen.startsWith("duo"), isPlay = screen.includes("game") || screen.includes("countdown"), isSetup = screen.includes("setup") || screen === "solo-menu";
+      const isDuo = screen.startsWith("duo");
       const handle = (to) => { setOpen(false); setScreen(to); };
-      const containerStyle = (isDuo && (isPlay || isSetup)) ? { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", zIndex: 6000 } : { position: "fixed", top: 12, right: 12, zIndex: 6000 };
+      const toggleFullscreen = () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen();
+        setOpen(false);
+      };
       return (
-        <div style={containerStyle}>
-          {open && <div onPointerDown={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 5999 }} />}
+        <div style={{ position: "fixed", top: 12, right: 12, zIndex: 6000 }}>
+          {open && <div onPointerDown={() => setOpen(false)} style={{ position: "fixed", inset: 0 }} />}
           <button onPointerDown={(e) => { e.preventDefault(); playClick(); setOpen(!open); }} className="menu-ham-btn">
             <div className="ham-line" /> <div className="ham-line" /> <div className="ham-line" />
           </button>
           {open && (
-            <div className="menu-dropdown" style={(isDuo && (isPlay || isSetup)) ? { bottom: 55, right: 0 } : { top: 48, right: 0 }}>
+            <div className="menu-dropdown" style={{ top: 48, right: 0 }}>
               <div onPointerDown={() => setOpen(false)} className="menu-item">🎮 ゲームにもどる</div>
-              {screen !== "top" && <div onPointerDown={() => handle(isDuo ? "duo-setup" : "solo-menu")} className="menu-item">📝 モードをえらびなおす</div>}
-              <div onPointerDown={() => { stopBGM(); handle("top"); }} className="menu-item" style={{ color: "#b08040", borderTop:'1px solid #eee' }}>🏠 タイトルにもどる</div>
+              <div onPointerDown={toggleFullscreen} className="menu-item">📺 全画面の切り替え</div>
+              {screen !== "top" && <div onPointerDown={() => handle(isDuo ? "duo-setup" : "solo-menu")} className="menu-item">📝 モード選択へ</div>}
+              <div onPointerDown={() => { stopBGM(); handle("top"); }} className="menu-item" style={{ color: "#b08040", borderTop:'1px solid #eee' }}>🏠 タイトルへ</div>
             </div>
           )}
         </div>
@@ -244,9 +251,6 @@
       if (!current) return null;
       return (
         <div className="game-panel">
-          <div className="stats-row" style={{ justifyContent: 'flex-start' }}>
-            {!isMini && <div className="score-label" style={{ background: color + '20' }}>{modeLabel || "正解"} {score}</div>}
-          </div>
           <div className={`q-box ${feedback || ""}`} style={{ padding: isMini ? "14px" : "20px", marginBottom: isMini ? "15px" : "30px" }}>
             <div className="q-text" style={{ fontSize: isMini ? "2rem" : "2.6rem" }}>
               {current.question.split("?")[0]}
@@ -264,58 +268,137 @@
 
     function App() {
       const [mainMode, setMainMode] = useState("addSub"), [screen, setScreen] = useState("top");
-      const toggleMainMode = () => { playClick(); setMainMode(prev => prev === "addSub" ? "mulDiv" : "addSub"); };
-      const [p1Kb, setP1Kb] = useState(false), [p2Kb, setP2Kb] = useState(false), [soloKb, setSoloKb] = useState(false);
-      const touchStartX = useRef(0);
-      const [soloLevel, setSoloLevel] = useState(1), [soloOp, setSoloOp] = useState("add"), [soloScore, setSoloScore] = useState(0), [soloTime, setSoloTime] = useState(0), [soloFinish, setSoloFinish] = useState(false), [soloName, setSoloName] = useState("プレイヤー1"), [countdown, setCountdown] = useState(3), [q1, setQ1] = useState(null), [fb1, setFb1] = useState(null), [typed1, setTyped1] = useState(""), [lastRank, setLastRank] = useState("見習い");
+      const [soundOn, setSoundOn] = useState(true);
+      const [soloLevel, setSoloLevel] = useState(1), [soloOp, setSoloOp] = useState("add"), [soloScore, setSoloScore] = useState(0), [soloTime, setSoloTime] = useState(0), [soloFinish, setSoloFinish] = useState(false), [soloName, setSoloName] = useState("プレイヤー1"), [countdown, setCountdown] = useState(3), [q1, setQ1] = useState(null), [fb1, setFb1] = useState(null), [typed1, setTyped1] = useState("");
       const [p1Name, setP1Name] = useState("プレイヤー1"), [p2Name, setP2Name] = useState("プレイヤー2"), [p1Level, setP1Level] = useState(1), [p2Level, setP2Level] = useState(1), [p1Op, setP1Op] = useState("add"), [p2Op, setP2Op] = useState("add"), [p1Score, setP1Score] = useState(0), [p2Score, setP2Score] = useState(0), [duoGoal, setDuoGoal] = useState(10), [winner, setWinner] = useState(null), [q2, setQ2] = useState(null), [fb2, setFb2] = useState(null), [typed2, setTyped2] = useState(""), [p1Ready, setP1Ready] = useState(false), [p2Ready, setP2Ready] = useState(false);
-      const rankRef = useRef(null);
+      const [soloKb, setSoloKb] = useState(false), [p1Kb, setP1Kb] = useState(false), [p2Kb, setP2Kb] = useState(false);
+      const touchStartX = useRef(0);
 
+      const toggleMainMode = () => { playClick(); setMainMode(prev => prev === "addSub" ? "mulDiv" : "addSub"); };
+
+      useEffect(() => { isSoundEnabled = soundOn; if (!soundOn) stopBGM(); else if (screen === "top") playBGM("menu"); }, [soundOn]);
       useEffect(() => { const op = mainMode === "addSub" ? "add" : "mul"; setSoloOp(op); setP1Op(op); setP2Op(op); }, [mainMode]);
-      useEffect(() => { if (!audioCtx) return; if (screen === "top" || screen.includes("menu") || screen.includes("setup")) playBGM("menu"); else if (screen === "solo-game-death") playBGM("death"); else if (screen.includes("game")) playBGM("play1"); else stopBGM(); }, [screen]);
-      useEffect(() => { if (screen === "duo-setup" && p1Ready && p2Ready) { const t = setTimeout(() => startDuo(), 500); return () => clearTimeout(t); } }, [p1Ready, p2Ready, screen]);
-      useEffect(() => { if (screen !== "duo-setup") { setP1Ready(false); setP2Ready(false); setP1Kb(false); setP2Kb(false); } }, [screen]);
-      useEffect(() => { let itv; if ((screen === "solo-game-time" || screen === "solo-game-death") && !soloFinish) { itv = setInterval(() => { setSoloTime(p => { if (p <= 1) { stopBGM(); setSoloFinish(true); setTimeout(() => setScreen(screen === "solo-game-time" ? "result-solo-time" : "result-solo-death"), 1000); return 0; } if (p <= 3) playTimeWarn(); return p - 1; }); }, 1000); } return () => clearInterval(itv); }, [screen, soloFinish]);
+      useEffect(() => { 
+        if (screen === "top" || screen.includes("menu") || screen.includes("setup")) playBGM("menu"); 
+        else if (screen === "solo-game-death") playBGM("death"); 
+        else if (screen.includes("game")) playBGM("play1"); 
+        else stopBGM(); 
+      }, [screen]);
+      useEffect(() => { if (screen === "duo-setup" && p1Ready && p2Ready) setTimeout(() => startDuo(), 500); }, [p1Ready, p2Ready]);
 
-      const startSoloTime = () => { setSoloScore(0); setTyped1(""); setFb1(null); setSoloTime(TIME_LIMIT_30); setSoloFinish(false); setCountdown(3); setScreen("solo-countdown-time"); let c = 3; playCountdown(c); const t = setInterval(() => { c--; if (c <= 0) { clearInterval(t); playCountdown(0); setQ1(generateQuestion(soloLevel, soloOp, mainMode)); setScreen("solo-game-time"); } else { setCountdown(c); playCountdown(c); } }, 1000); };
-      const startSoloDeath = () => { setSoloScore(0); setTyped1(""); setFb1(null); setSoloTime(SUDDEN_DEATH_PER_Q); setSoloFinish(false); setCountdown(3); setScreen("solo-countdown-death"); let c = 3; playCountdown(c); const t = setInterval(() => { c--; if (c <= 0) { clearInterval(t); playCountdown(0); setQ1(generateQuestion(1, mainMode === "addSub" ? "add" : "mul", mainMode)); setScreen("solo-game-death"); } else { setCountdown(c); playCountdown(c); } }, 1000); };
-      const startDuo = () => { setWinner(null); setP1Score(0); setP2Score(0); setTyped1(""); setTyped2(""); setFb1(null); setFb2(null); setQ1(generateQuestion(p1Level, p1Op, mainMode)); setQ2(generateQuestion(p2Level, p2Op, mainMode)); setCountdown(3); setScreen("duo-countdown"); let c = 3; playCountdown(c); const t = setInterval(() => { c--; if (c <= 0) { clearInterval(t); playCountdown(0); setScreen("duo-game"); } else { setCountdown(c); playCountdown(c); } }, 1000); };
+      useEffect(() => {
+        let itv;
+        if ((screen === "solo-game-time" || screen === "solo-game-death") && !soloFinish) {
+          itv = setInterval(() => {
+            setSoloTime(p => {
+              if (p <= 1) {
+                stopBGM(); setSoloFinish(true);
+                setTimeout(() => setScreen(screen === "solo-game-time" ? "result-solo-time" : "result-solo-death"), 1200);
+                return 0;
+              }
+              if (p <= 3) playTimeWarn();
+              return p - 1;
+            });
+          }, 1000);
+        }
+        return () => clearInterval(itv);
+      }, [screen, soloFinish]);
 
-      const handleSoloAnsTime = (v) => { if (fb1 || soloFinish || !q1) return; setTyped1(v); if (v === String(q1.answer)) { playCorrect(); setFb1("correct"); setSoloScore(s => s + 1); setTimeout(() => { setFb1(null); setTyped1(""); setQ1(q => generateQuestion(soloLevel, soloOp, mainMode, q.question)); }, 250); } else if (!String(q1.answer).startsWith(v)) { playWrong(); setFb1("wrong"); setTimeout(() => { setFb1(null); setTyped1(""); }, 400); } };
-      const handleSoloAnsDeath = (v) => { if (fb1 || soloFinish || !q1) return; setTyped1(v); if (v === String(q1.answer)) { playCorrect(); setFb1("correct"); setSoloScore(s => s + 1); setTimeout(() => { setFb1(null); setTyped1(""); setSoloTime(SUDDEN_DEATH_PER_Q); setQ1(q => generateQuestion(Math.min(4, Math.floor((soloScore+1)/10)+1), mainMode === "addSub" ? "add" : "mul", mainMode, q.question)); }, 250); } else if (!String(q1.answer).startsWith(v)) { playWrong(); setFb1("wrong"); setSoloFinish(true); stopBGM(); setTimeout(() => setScreen("result-solo-death"), 1000); } };
-      const handleDuoAns = (p, v) => { if (winner || screen !== "duo-game") return; const target = p === 1 ? q1 : q2, setT = p === 1 ? setTyped1 : setTyped2, setS = p === 1 ? setP1Score : setP2Score, setFb = p === 1 ? setFb1 : setFb2; setT(v); if (v === String(target.answer)) { playCorrect(); setFb("correct"); const ns = (p === 1 ? p1Score : p2Score) + 1; setS(ns); if (ns >= duoGoal) { setWinner(p === 1 ? p1Name : p2Name); stopBGM(); playWin(); setTimeout(() => setScreen("duo-result"), 1200); } else setTimeout(() => { setFb(null); setT(""); (p === 1 ? setQ1 : setQ2)(q => generateQuestion(p === 1 ? p1Level : p2Level, p === 1 ? p1Op : p2Op, mainMode, q.question)); }, 300); } else if (!String(target.answer).startsWith(v)) { playWrong(); setFb("wrong"); setS(s => Math.max(0, s - 1)); setTimeout(() => { setFb(null); setT(""); }, 400); } };
+      const startSoloTime = () => {
+        setSoloScore(0); setTyped1(""); setFb1(null); setSoloTime(TIME_LIMIT_30); setSoloFinish(false); setCountdown(3); setScreen("solo-countdown-time");
+        let c = 3; playCountdown(c);
+        const t = setInterval(() => {
+          c--; if (c <= 0) { clearInterval(t); playCountdown(0); setQ1(generateQuestion(soloLevel, soloOp, mainMode)); setScreen("solo-game-time"); }
+          else { setCountdown(c); playCountdown(c); }
+        }, 1000);
+      };
+
+      const startSoloDeath = () => {
+        setSoloScore(0); setTyped1(""); setFb1(null); setSoloTime(SUDDEN_DEATH_PER_Q); setSoloFinish(false); setCountdown(3); setScreen("solo-countdown-death");
+        let c = 3; playCountdown(c);
+        const t = setInterval(() => {
+          c--; if (c <= 0) { clearInterval(t); playCountdown(0); setQ1(generateQuestion(1, mainMode === "addSub" ? "add" : "mul", mainMode)); setScreen("solo-game-death"); }
+          else { setCountdown(c); playCountdown(c); }
+        }, 1000);
+      };
+
+      const startDuo = () => {
+        setWinner(null); setP1Score(0); setP2Score(0); setTyped1(""); setTyped2(""); setFb1(null); setFb2(null);
+        setQ1(generateQuestion(p1Level, p1Op, mainMode)); setQ2(generateQuestion(p2Level, p2Op, mainMode));
+        setCountdown(3); setScreen("duo-countdown");
+        let c = 3; playCountdown(c);
+        const t = setInterval(() => {
+          c--; if (c <= 0) { clearInterval(t); playCountdown(0); setScreen("duo-game"); }
+          else { setCountdown(c); playCountdown(c); }
+        }, 1000);
+      };
+
+      const handleSoloAnsTime = (v) => {
+        if (fb1 || soloFinish || !q1) return; setTyped1(v);
+        if (v === String(q1.answer)) {
+          playCorrect(); setFb1("correct"); setSoloScore(s => s + 1);
+          setTimeout(() => { setFb1(null); setTyped1(""); setQ1(q => generateQuestion(soloLevel, soloOp, mainMode, q.question)); }, 250);
+        } else if (!String(q1.answer).startsWith(v)) {
+          playWrong(); setFb1("wrong"); setTimeout(() => { setFb1(null); setTyped1(""); }, 400);
+        }
+      };
+
+      const handleSoloAnsDeath = (v) => {
+        if (fb1 || soloFinish || !q1) return; setTyped1(v);
+        if (v === String(q1.answer)) {
+          playCorrect(); setFb1("correct"); setSoloScore(s => s + 1);
+          setTimeout(() => { setFb1(null); setTyped1(""); setSoloTime(SUDDEN_DEATH_PER_Q); setQ1(q => generateQuestion(Math.min(4, Math.floor((soloScore+1)/10)+1), mainMode === "addSub" ? "add" : "mul", mainMode, q.question)); }, 250);
+        } else if (!String(q1.answer).startsWith(v)) {
+          playWrong(); setFb1("wrong"); setSoloFinish(true); stopBGM();
+          setTimeout(() => setScreen("result-solo-death"), 1000);
+        }
+      };
+
+      const handleDuoAns = (p, v) => {
+        if (winner || screen !== "duo-game") return;
+        const target = p === 1 ? q1 : q2, setT = p === 1 ? setTyped1 : setTyped2, setS = p === 1 ? setP1Score : setP2Score, setFb = p === 1 ? setFb1 : setFb2;
+        setT(v);
+        if (v === String(target.answer)) {
+          playCorrect(); setFb("correct"); const ns = (p === 1 ? p1Score : p2Score) + 1; setS(ns);
+          if (ns >= duoGoal) { setWinner(p === 1 ? p1Name : p2Name); stopBGM(); playWin(); setTimeout(() => setScreen("duo-result"), 1200); }
+          else setTimeout(() => { setFb(null); setT(""); (p === 1 ? setQ1 : setQ2)(q => generateQuestion(p === 1 ? p1Level : p2Level, p === 1 ? p1Op : p2Op, mainMode, q.question)); }, 300);
+        } else if (!String(target.answer).startsWith(v)) {
+          playWrong(); setFb("wrong"); setS(s => Math.max(0, s - 1)); setTimeout(() => { setFb(null); setT(""); }, 400);
+        }
+      };
+
+      const goTop = () => { stopBGM(); setScreen("top"); setSoloLevel(1); setDuoGoal(10); setSoloKb(false); setP1Kb(false); setP2Kb(false); };
 
       const opOptions = mainMode === "addSub" ? [{ v: "both", e: <span className="op-group"><span className="op-add">＋</span><span className="op-sub">－</span></span>, l: "りょうほう" }, { v: "add", e: <span className="op-add">＋</span>, l: "たし算" }, { v: "sub", e: <span className="op-sub">－</span>, l: "ひき算" }] : [{ v: "both", e: <span className="op-group"><span className="op-mul">×</span><span className="op-div">÷</span></span>, l: "りょうほう" }, { v: "mul", e: <span className="op-mul">×</span>, l: "かけ算" }, { v: "div", e: <span className="op-div">÷</span>, l: "わり算" }];
       const lvOptions = mainMode === "addSub" ? [{ v: 1, e: "⭐", l: "10をつくる" }, { v: 2, e: "⭐⭐", l: "くり上がり" }, { v: 3, e: "⭐⭐⭐", l: "2ケタ計算" }, { v: 4, e: "⭐⭐⭐⭐", l: "むずかしい" }] : [{ v: 1, e: "⭐", l: "１～５の段" }, { v: 2, e: "⭐⭐", l: "１～９の段" }, { v: 3, e: "⭐⭐⭐", l: "２ケタの段" }, { v: 4, e: "⭐⭐⭐⭐", l: "むずかしい" }];
-      
-      const goTop = () => { stopBGM(); setScreen("top"); setSoloLevel(1); setDuoGoal(10); setSoloKb(false); setP1Kb(false); setP2Kb(false); };
 
       return (
         <div className="app-root" onPointerDownCapture={() => !audioCtx && getCtx()} onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }} onTouchEnd={(e) => { if(screen === "top" && Math.abs(e.changedTouches[0].clientX - touchStartX.current) > 50) toggleMainMode(); }} style={{ backgroundColor: mainMode === "addSub" ? "#4a8a2c" : "#2c528a" }}>
           
           <style>{`
-            .app-root { height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; font-family: 'Fredoka One', 'M PLUS Rounded 1c', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: background-color 0.5s ease; }
+            .app-root { height: 100%; width: 100vw; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: background-color 0.5s ease; }
             .bubble { position: absolute; background: rgba(255, 255, 232, 0.15); border-radius: 50%; animation: float 4s ease-in-out infinite; pointer-events: none; }
             @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
             
-            .title-box { text-align: center; color: white; margin-bottom: 40px; }
-            .mode-card { background: linear-gradient(160deg, #fffbe8, #fff3c4); border: 3px solid #c8a444; border-radius: 24px; padding: 25px; text-align: center; box-shadow: 0 5px 0 #9a7a20; }
-            .clickable { cursor: pointer; transition: transform 0.1s; }
-            .clickable:active { transform: scale(1.05) translateY(2px); box-shadow: 0 2px 0 #9a7a20; }
+            .title-box { text-align: center; color: white; margin-bottom: 40px; z-index: 10; }
+            .title-main { font-size: 2.8rem; text-shadow: 0 5px 0 rgba(0,0,0,0.3); line-height: 1.2; font-weight: 900; }
             
-            .start-btn { background: linear-gradient(160deg, #ff9f43, #e67e22); border: none; color: white; font-size: 1.2rem; padding: 12px 35px; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 0 #b05c10; font-weight: 800; transition: transform 0.1s; outline: none; }
-            .digit-button { background: linear-gradient(160deg, #fffbe8, #fff0b0); border: 2.5px solid #c8a444; border-radius: 50%; color: #7a4500; font-family: 'Fredoka One'; cursor: pointer; box-shadow: 0 4px 0 #c8a444; transition: transform 0.08s; font-weight: 900; display: flex; align-items: center; justify-content: center; outline: none; }
+            .mode-card { background: linear-gradient(160deg, #fffbe8, #fff3c4); border: 3px solid #c8a444; border-radius: 24px; padding: 25px; text-align: center; box-shadow: 0 6px 0 #9a7a20; transition: transform 0.1s; }
+            .clickable:active { transform: scale(0.95) translateY(4px); box-shadow: 0 2px 0 #9a7a20; }
+            
+            .start-btn { background: linear-gradient(160deg, #ff9f43, #e67e22); border: none; color: white; font-size: 1.2rem; padding: 12px 35px; border-radius: 50px; box-shadow: 0 5px 0 #b05c10; font-weight: 800; cursor: pointer; outline: none; }
+            .digit-button { background: linear-gradient(160deg, #fffbe8, #fff0b0); border: 2.5px solid #c8a444; border-radius: 50%; color: #7a4500; font-family: 'Fredoka One'; cursor: pointer; box-shadow: 0 4px 0 #c8a444; font-weight: 900; display: flex; align-items: center; justify-content: center; outline: none; }
             .digit-button:active { transform: scale(1.1); box-shadow: none; }
             .digit-row-container { display: flex; flex-direction: column; width: 100%; align-items: center; }
             .digit-row { display: flex; justify-content: center; width: 100%; }
             
             .q-box { position: relative; border: 3px solid #c8a444; border-radius: 20px; box-shadow: 0 4px 0 #9a7a20; text-align: center; background: linear-gradient(160deg,#fffbe8,#fff8d6); width: 100%; max-width: 380px; }
-            .q-text { color: #7a4500; font-family: 'Fredoka One'; line-height: 1.2; }
+            .q-text { color: #7a4500; font-family: 'Fredoka One'; line-height: 1.2; font-weight: 900; }
             .ans-slot { display: inline-block; font-style: italic; font-weight: 900; text-decoration: underline; }
             
             .race-track { height: 50px; background: #2d5212; width: 100%; border-top: 3px solid #3d6e1a; border-bottom: 3px solid #3d6e1a; position: relative; display: flex; align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); z-index: 10; }
             .race-label { position: absolute; font-size: 0.6rem; font-weight: 800; color: white; z-index: 100; padding: 3px 8px; border-radius: 6px; top: 50%; transform: translateY(-50%); white-space: nowrap; }
-            .race-icon { position: absolute; transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); font-size: 1.25rem; }
+            .race-icon { position: absolute; transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); font-size: 1.25rem; }
             
             .menu-ham-btn { width: 44px; height: 44px; border-radius: 50%; background: #fffbe8; border: 2.5px solid #c8a444; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 0 #9a7a20; z-index: 6001; }
             .ham-line { width: 22px; height: 3px; background: #7a4500; border-radius: 2px; }
@@ -323,8 +406,6 @@
             .menu-item { padding: 14px 20px; color: #7a4500; cursor: pointer; font-size: 0.95rem; font-weight: 800; text-align: left; }
             
             .game-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
-            .stats-row { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 380px; margin-bottom: 5px; min-height: 35px; }
-            .score-label { background: rgba(255,251,232,0.25); border-radius: 50px; padding: 5px 20px; color: white; font-weight: 900; border: 1px solid rgba(255,255,255,0.3); }
             
             .feedback-container { position: absolute; inset: -5px; display: flex; align-items: center; justify-content: center; border-radius: 20px; z-index: 10; pointer-events: none; }
             .fb-icon { font-size: 5rem; text-shadow: 0 0 10px white; }
@@ -332,43 +413,59 @@
             .fb-shake { animation: wShake 0.4s; color: #ef4444; }
             
             .input-box-container { position: relative; display: flex; align-items: center; justify-content: center; background: #fff8d6; border: 3px solid #c8a444; border-radius: 12px; padding: 0 45px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); width: 100%; height: 50px; cursor: pointer; }
-            .input-icon { position: absolute; left: 10px; font-size: 2rem; top: 50%; transform: translateY(-50%); }
+            .input-icon { position: absolute; left: 10px; font-size: 2rem; }
             .input-val { font-weight: 900; font-size: 1.2rem; color: #5a3a00; text-align: center; }
-            .input-pencil { position: absolute; right: 10px; font-size: 1.2rem; top: 50%; transform: translateY(-50%); }
             
-            .toggle-btn { flex: 1; min-width: 0; background: linear-gradient(160deg, #fffbe8, #fff3c4); border: 3px solid #d4b86a; border-radius: 16px; padding: 12px 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 5px 0 #d4b86a; transition: transform 0.1s; outline: none; width: 100%; }
+            .toggle-btn { flex: 1; background: linear-gradient(160deg, #fffbe8, #fff3c4); border: 3px solid #d4b86a; border-radius: 16px; padding: 12px 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 5px 0 #d4b86a; outline: none; }
             .toggle-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #d4b86a; }
-            .toggle-arrow { color: #c8a444; font-weight: 900; font-size: 1.5rem; text-shadow: 0 1px 0 #fff; }
-            .toggle-content { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-            .toggle-emoji { font-size: 1.8rem; line-height: 1.1; }
-            .toggle-label { font-weight: 900; color: #7a4500; font-size: 0.9rem; white-space: nowrap; letter-spacing: -0.5px; line-height: 1.2; }
+            .toggle-arrow { color: #c8a444; font-weight: 900; font-size: 1.5rem; }
+            .toggle-content { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+            .toggle-emoji { font-size: 1.8rem; }
+            .toggle-label { font-weight: 900; color: #7a4500; font-size: 0.9rem; white-space: nowrap; }
             
-            .op-add { color: #ff9de2; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 3px 0 rgba(0,0,0,0.1); font-size: 2.2rem; line-height: 1; }
-            .op-sub { color: #7ee8fa; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 3px 0 rgba(0,0,0,0.1); font-size: 2.2rem; line-height: 1; }
-            .op-mul { color: #0047AB; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 3px 0 rgba(0,0,0,0.1); font-size: 2.2rem; line-height: 1; }
-            .op-div { color: #B39DDB; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 3px 0 rgba(0,0,0,0.1); font-size: 2.2rem; line-height: 1; }
-            .op-group { display: flex; align-items: center; gap: 2px; }
+            .op-add { color: #ff9de2; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff; }
+            .op-sub { color: #7ee8fa; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff; }
+            .op-mul { color: #0047AB; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff; }
+            .op-div { color: #B39DDB; font-weight: 900; text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff; }
+            .op-group { display: flex; align-items: center; gap: 2px; font-size: 1.8rem; }
             
             .status-btn { width: 100%; padding: 12px; border-radius: 12px; font-weight: 900; font-size: 1.3rem; color: white; border: none; cursor: pointer; margin-top: 15px; }
             .status-btn.ready { background: linear-gradient(160deg, #e68383, #d46363); box-shadow: 0 5px 0 #a64242; } 
             .status-btn.wait { background: linear-gradient(160deg, #7ac496, #5cad78); box-shadow: 0 5px 0 #3e8255; transform: translateY(2px); } 
             
             .result-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; pointer-events: none; }
-            .result-band { width: 100%; text-align: center; padding: 15px 0; font-size: 2.2rem; font-weight: 900; animation: cPop 0.4s; text-shadow: 0 2px 4px rgba(0,0,0,0.5); color: white; }
+            .result-band { width: 100%; text-align: center; padding: 15px 0; font-size: 2.2rem; font-weight: 900; animation: cPop 0.4s; text-shadow: 0 2px 4px rgba(0,0,0,0.5); color: white; background: rgba(0,0,0,0.7); }
 
             @keyframes cPop { 0%{transform:scale(0.6)} 60%{transform:scale(1.25)} 100%{transform:scale(1)} }
-            @keyframes wShake { 0%,100%{transform:translateX(0)} 25%{-6px} 75%{6px} }
-            .swipe-hint { position: fixed; bottom: 20px; width: 100%; text-align: center; color: rgba(255,255,255,0.7); font-size: 0.8rem; font-weight: 800; cursor: pointer; z-index: 100; }
+            @keyframes wShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+            .se-toggle-btn { position: fixed; top: 12px; left: 12px; z-index: 6000; width: 44px; height: 44px; border-radius: 50%; background: #fffbe8; border: 2.5px solid #c8a444; box-shadow: 0 4px 0 #9a7a20; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+            
+            .swipe-hint-text { 
+              margin-top: 30px; 
+              color: white; 
+              opacity: 0.8; 
+              font-size: 0.85rem; 
+              font-weight: 900; 
+              cursor: pointer; 
+              padding: 10px 20px;
+              border-radius: 20px;
+              transition: opacity 0.2s, background 0.2s;
+            }
+            .swipe-hint-text:active { opacity: 1; background: rgba(255,255,255,0.1); }
           `}</style>
 
           {[...Array(6)].map((_, i) => <div key={i} className="bubble" style={{ width: 60, height: 60, top: (i*15)+'%', left: (i%2?5:85)+'%', animationDelay: i*0.5+'s' }} />)}
 
+          <button className="se-toggle-btn" onPointerDown={() => setSoundOn(!soundOn)}>
+            {soundOn ? "🎵" : "🔇"}
+          </button>
+          
           <GlobalMenu screen={screen} setScreen={setScreen} />
 
           {screen === "top" && (
             <div className="title-box">
               <div style={{ fontSize: "6rem", animation: "float 3s infinite" }}>{mainMode === "addSub" ? "🐻" : "🐼"}</div>
-              <h1 style={{ fontSize: "2.8rem", textShadow: "0 4px 0 #2d5212", letterSpacing: '-1px', lineHeight: 1.3 }}>
+              <h1 className="title-main">
                 {mainMode === "addSub" ? <>たし算<span className="op-add">＋</span><br/>ひき算<span className="op-sub">－</span></> : <>かけ算<span className="op-mul">×</span><br/>わり算<span className="op-div">÷</span></>}
               </h1>
               <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 40 }}>
@@ -381,13 +478,18 @@
                   <div style={{ color: "#7a4500", fontWeight: "900", fontSize: "1.2rem" }}>ふたりで</div>
                 </div>
               </div>
-              <div className="swipe-hint" onPointerDown={toggleMainMode}>＜ スワイプ または タップできりかえ ＞</div>
+              <div 
+                className="swipe-hint-text" 
+                onPointerDown={(e) => { e.preventDefault(); toggleMainMode(); }}
+              >
+                ＜ スワイプ または タップできりかえ ＞
+              </div>
             </div>
           )}
 
           {screen === "solo-menu" && (
             <div style={{ textAlign: "center", zIndex: 10 }}>
-              <h2 style={{ color: "white", fontSize: "2.2rem", marginBottom: 30, textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>どちらであそぶ？</h2>
+              <h2 style={{ color: "white", fontSize: "2.2rem", marginBottom: 30 }}>どちらであそぶ？</h2>
               <div style={{ display: "flex", gap: 20, justifyContent: "center" }}>
                 <div className="mode-card clickable" onPointerDown={() => { playClick(); setScreen("solo-setup-time"); }}>
                   <div style={{ fontSize: "3.5rem" }}>⏱️</div>
@@ -405,12 +507,8 @@
             <div className="mode-card" style={{ maxWidth: 420, width: "95%", zIndex: 10 }}>
               <h2 style={{ color: "#7a4500", marginBottom: 20, fontWeight: 900 }}>{screen.includes("time") ? "⏱️ 30秒モード" : "🚀 サドンデス"}</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-                <div className="input-box-container" onPointerDown={(e) => { 
-                  e.preventDefault(); 
-                  if (!soloKb && soloName === "プレイヤー1") setSoloName("");
-                  setSoloKb(!soloKb); 
-                }}>
-                  <span className="input-icon">🐥</span><div className="input-val">{soloName}</div><span className="input-pencil">✏️</span>
+                <div className="input-box-container" onPointerDown={() => setSoloKb(!soloKb)}>
+                  <span className="input-icon">🐥</span><div className="input-val">{soloName}</div><span style={{position:'absolute',right:10}}>✏️</span>
                 </div>
                 {soloKb ? <JapaneseKeyboard value={soloName} onChange={setSoloName} onSet={()=>setSoloKb(false)} /> : (
                   <>
@@ -429,17 +527,13 @@
             <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", zIndex: 50 }}>
               <div style={{ flex: 1, transform: "rotate(180deg)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.1)", padding: 10 }}>
                 <div className="mode-card" style={{ width: "100%", maxWidth: 450, padding: 15 }}>
-                  <div className="input-box-container" onPointerDown={(e) => { 
-                    e.preventDefault(); 
-                    if (!p2Kb && p2Name === "プレイヤー2") setP2Name("");
-                    setP2Kb(!p2Kb); 
-                  }} style={{marginBottom: 10}}>
-                    <span className="input-icon">{mainMode === "addSub" ? "🐹" : "🦊"}</span><div className="input-val">{p2Name}</div><span className="input-pencil">✏️</span>
+                  <div className="input-box-container" onPointerDown={() => setP2Kb(!p2Kb)} style={{marginBottom: 10}}>
+                    <span className="input-icon">{mainMode === "addSub" ? "🐹" : "🦊"}</span><div className="input-val">{p2Name}</div>
                   </div>
                   {p2Kb ? <JapaneseKeyboard value={p2Name} onChange={setP2Name} onSet={()=>setP2Kb(false)} /> : (
                     <>
                       <div style={{ display: "flex", gap: 6, width: "100%" }}><ToggleButton options={opOptions} value={p2Op} onChange={setP2Op} /><ToggleButton options={lvOptions} value={p2Level} onChange={setP2Level} /></div>
-                      <button className={`status-btn ${p2Ready ? 'wait' : 'ready'}`} onPointerDown={(e) => { e.preventDefault(); playClick(); setP2Ready(!p2Ready); }}>{p2Ready ? 'まってね...' : 'けってい！'}</button>
+                      <button className={`status-btn ${p2Ready ? 'wait' : 'ready'}`} onPointerDown={() => setP2Ready(!p2Ready)}>{p2Ready ? 'まってね...' : 'けってい！'}</button>
                     </>
                   )}
                 </div>
@@ -447,17 +541,13 @@
               <div style={{ height: 60, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}><div style={{ width: 200 }}><ToggleButton options={[{v:5,l:"5もん"},{v:10,l:"10もん"},{v:20,l:"20もん"}]} value={duoGoal} onChange={setDuoGoal} /></div></div>
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.1)", padding: 10 }}>
                 <div className="mode-card" style={{ width: "100%", maxWidth: 450, padding: 15 }}>
-                  <div className="input-box-container" onPointerDown={(e) => { 
-                    e.preventDefault(); 
-                    if (!p1Kb && p1Name === "プレイヤー1") setP1Name("");
-                    setP1Kb(!p1Kb); 
-                  }} style={{marginBottom: 10}}>
-                    <span className="input-icon">{mainMode === "addSub" ? "🐻" : "🐼"}</span><div className="input-val">{p1Name}</div><span className="input-pencil">✏️</span>
+                  <div className="input-box-container" onPointerDown={() => setP1Kb(!p1Kb)} style={{marginBottom: 10}}>
+                    <span className="input-icon">{mainMode === "addSub" ? "🐻" : "🐼"}</span><div className="input-val">{p1Name}</div>
                   </div>
                   {p1Kb ? <JapaneseKeyboard value={p1Name} onChange={setP1Name} onSet={()=>setP1Kb(false)} /> : (
                     <>
                       <div style={{ display: "flex", gap: 6, width: "100%" }}><ToggleButton options={opOptions} value={p1Op} onChange={setP1Op} /><ToggleButton options={lvOptions} value={p1Level} onChange={setP1Level} /></div>
-                      <button className={`status-btn ${p1Ready ? 'wait' : 'ready'}`} onPointerDown={(e) => { e.preventDefault(); playClick(); setP1Ready(!p1Ready); }}>{p1Ready ? 'まってね...' : 'けってい！'}</button>
+                      <button className={`status-btn ${p1Ready ? 'wait' : 'ready'}`} onPointerDown={() => setP1Ready(!p1Ready)}>{p1Ready ? 'まってね...' : 'けってい！'}</button>
                     </>
                   )}
                 </div>
@@ -465,36 +555,22 @@
             </div>
           )}
 
-          {(screen === "solo-game-time" || screen === "solo-game-death") && (
+          {(screen.includes("solo-game")) && (
             <div className="game-panel" style={{ zIndex: 10 }}>
-              <div style={{ background: "rgba(0,0,0,0.25)", width: "100%", padding: 12, color: "white", position: "absolute", top: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                <span style={{ fontWeight: 800 }}>{screen.includes("death") ? "🚀 ステージ" : "段位:"}</span><div ref={rankRef} style={{ fontSize: "1.6rem", fontWeight: 900, background: "#ffd200", color: "#7a4500", padding: "2px 20px", borderRadius: 12 }}>{screen.includes("death") ? Math.min(4, Math.floor(soloScore/10)+1) : currentRank}</div>
+              <div style={{ position: "absolute", top: 0, background: "rgba(0,0,0,0.25)", width: "100%", padding: 12, color: "white", textAlign: "center", fontWeight: 900 }}>
+                {screen.includes("death") ? "🚀 ステージ " + Math.min(4, Math.floor(soloScore/10)+1) : "段位: " + getRankLabel(soloScore)}
               </div>
-              <div style={{ position: 'absolute', top: '80px', fontSize: "4.5rem", color: "rgba(255,255,255,0.5)", fontWeight: 900, fontFamily: 'Fredoka One' }}>{soloTime || ""}</div>
+              <div style={{ position: 'absolute', top: '80px', fontSize: "4.5rem", color: "rgba(255,255,255,0.5)", fontWeight: 900 }}>{soloTime || ""}</div>
               <GamePanel feedback={fb1} current={q1} onAnswer={screen.includes("time") ? handleSoloAnsTime : handleSoloAnsDeath} score={soloScore} color="#fff" typed={typed1} />
-              {soloFinish && (
-                <div className="result-overlay">
-                  <div className="result-band" style={{ background: (screen === "solo-game-death" && soloScore >= 60) ? 'rgba(255, 87, 34, 0.85)' : 'rgba(15, 15, 35, 0.85)', fontSize: '3.5rem' }}>
-                    {screen === "solo-game-death" && soloScore >= 60 ? "制覇！！" : "そこまで！"}
-                  </div>
-                </div>
-              )}
+              {soloFinish && <div className="result-overlay"><div className="result-band">そこまで！</div></div>}
             </div>
           )}
 
           {(screen === "duo-game" || screen === "duo-countdown") && (
             <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", zIndex: 10 }}>
-              <div className="duo-side" style={{ transform: "rotate(180deg)", flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ textAlign:'center', color:'white', fontWeight:900, padding:8 }}>{mainMode === "addSub" ? "🐹" : "🦊"} {p2Name}</div>
+              <div style={{ transform: "rotate(180deg)", flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-                  {screen === "duo-countdown" ? <div className="countdown-text" style={{fontSize:'8rem', color:'#fffbe8'}}>{countdown}</div> : <GamePanel isMini current={q2} feedback={fb2} onAnswer={v => handleDuoAns(2, v)} score={p2Score} color="#ff9de2" typed={typed2} />}
-                  {winner && (
-                    <div className="result-overlay">
-                      <div className="result-band" style={{ background: winner === p2Name ? 'rgba(255, 87, 34, 0.85)' : 'rgba(15, 15, 35, 0.85)' }}>
-                        {winner === p2Name ? "🎉 クリア！！" : "🏳️ そこまで！"}
-                      </div>
-                    </div>
-                  )}
+                  {screen === "duo-countdown" ? <div style={{fontSize:'8rem', color:'#fffbe8', fontWeight:900}}>{countdown}</div> : <GamePanel isMini current={q2} feedback={fb2} onAnswer={v => handleDuoAns(2, v)} score={p2Score} typed={typed2} />}
                 </div>
               </div>
               
@@ -502,35 +578,31 @@
                 <div className="race-label" style={{ left: 16, background: "#ffd200", color: "#7a4500" }}>スタート</div>
                 <div className="race-label" style={{ right: 16, background: "#ef4444" }}>ゴール！</div>
                 <div style={{ position: "absolute", left: 85, right: 85, top: 0, bottom: 0 }}>
-                  {[...Array(duoGoal + 1)].map((_, i) => (<div key={i} style={{ position: 'absolute', height: '100%', width: 1, background: 'rgba(255,255,255,0.15)', left: `${(i / duoGoal) * 100}%` }} />))}
-                  <div className="race-icon" style={{ left: `${(p2Score / duoGoal) * 100}%`, top: '5%', transform: 'translateX(-50%) rotate(180deg)', zIndex: 25 }}>{mainMode === "addSub" ? "🐹" : "🦊"}</div>
-                  <div className="race-icon" style={{ left: `${(p1Score / duoGoal) * 100}%`, top: '45%', transform: 'translateX(-50%) rotate(0deg)', zIndex: 26 }}>{mainMode === "addSub" ? "🐻" : "🐼"}</div>
+                  <div className="race-icon" style={{ left: `${(p2Score / duoGoal) * 100}%`, top: '5%', transform: 'translateX(-50%) rotate(180deg)' }}>{mainMode === "addSub" ? "🐹" : "🦊"}</div>
+                  <div className="race-icon" style={{ left: `${(p1Score / duoGoal) * 100}%`, top: '45%', transform: 'translateX(-50%)' }}>{mainMode === "addSub" ? "🐻" : "🐼"}</div>
                 </div>
               </div>
 
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ textAlign:'center', color:'white', fontWeight:900, padding:8 }}>{mainMode === "addSub" ? "🐻" : "🐼"} {p1Name}</div>
                 <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-                  {screen === "duo-countdown" ? <div className="countdown-text" style={{fontSize:'8rem', color:'#fffbe8'}}>{countdown}</div> : <GamePanel isMini current={q1} feedback={fb1} onAnswer={v => handleDuoAns(1, v)} score={p1Score} color="#7ee8fa" typed={typed1} />}
-                  {winner && (
-                    <div className="result-overlay">
-                      <div className="result-band" style={{ background: winner === p1Name ? 'rgba(255, 87, 34, 0.85)' : 'rgba(15, 15, 35, 0.85)' }}>
-                        {winner === p1Name ? "🎉 クリア！！" : "🏳️ そこまで！"}
-                      </div>
-                    </div>
-                  )}
+                  {screen === "duo-countdown" ? <div style={{fontSize:'8rem', color:'#fffbe8', fontWeight:900}}>{countdown}</div> : <GamePanel isMini current={q1} feedback={fb1} onAnswer={v => handleDuoAns(1, v)} score={p1Score} typed={typed1} />}
                 </div>
               </div>
             </div>
           )}
 
-          {screen.includes("solo-countdown") && <div style={{ zIndex: 100, textAlign: "center" }}><p style={{ color: "white", fontSize: "2.5rem", fontWeight: 900 }}>よーい...</p><div className="countdown-text" style={{fontSize:'9rem', color:'#fffbe8'}}>{countdown}</div></div>}
+          {screen.includes("solo-countdown") && <div style={{ zIndex: 100, textAlign: "center" }}><p style={{ color: "white", fontSize: "2.5rem", fontWeight: 900 }}>よーい...</p><div style={{fontSize:'9rem', color:'#fffbe8', fontWeight:900}}>{countdown}</div></div>}
 
           {screen.includes("result") && (
             <div className="mode-card" style={{ width: "95%", maxWidth: 420, zIndex: 1000, animation: "cPop 0.4s" }}>
               <div style={{ fontSize: "5.5rem" }}>🏆</div><h2 style={{ fontSize: "2.2rem", color: "#7a4500", margin: "10px 0", fontWeight: 900 }}>結果発表</h2>
-              <div style={{ color: "#b08040", marginBottom: 25, fontWeight: 800 }}>{screen.includes("solo") ? <><div style={{fontSize:"1.6rem"}}>せいかい: {soloScore}問</div></> : <div style={{fontSize:"1.8rem"}}>{winner} さんの勝利！</div>}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><button className="start-btn" onPointerDown={(e) => { e.preventDefault(); screen.includes("time") ? startSoloTime() : screen.includes("death") ? startSoloDeath() : startDuo(); }}>もう一回！</button><button className="start-btn" style={{ background: '#eee', color: '#666', boxShadow: '0 5px 0 #ccc' }} onPointerDown={(e) => { e.preventDefault(); goTop(); }}>タイトルへ</button></div>
+              <div style={{ color: "#b08040", marginBottom: 25, fontWeight: 800 }}>
+                {screen.includes("solo") ? <div style={{fontSize:"1.6rem"}}>せいかい: {soloScore}問</div> : <div style={{fontSize:"1.8rem"}}>{winner} のかち！</div>}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <button className="start-btn" onPointerDown={() => screen.includes("time") ? startSoloTime() : screen.includes("death") ? startSoloDeath() : startDuo()}>もう一回！</button>
+                <button className="start-btn" style={{ background: '#eee', color: '#666', boxShadow: '0 5px 0 #ccc' }} onPointerDown={goTop}>タイトルへ</button>
+              </div>
             </div>
           )}
         </div>
