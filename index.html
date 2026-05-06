@@ -11,24 +11,13 @@
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap');
-
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
-      user-select: none; 
-      -webkit-touch-callout: none; 
-      font-family: 'Nunito', 'M PLUS Rounded 1c', sans-serif;
+    * {
+      box-sizing:border-box; margin:0; padding:0;
+      user-select:none; -webkit-touch-callout:none;
+      font-family:'Nunito','M PLUS Rounded 1c',sans-serif;
     }
-    body { 
-      margin: 0; 
-      padding: 0; 
-      overflow: hidden; 
-      background-color: #1a1a2e; 
-      touch-action: none; 
-      transition: background-color 0.5s; 
-    }
-    #root { height: 100vh; height: 100dvh; }
+    body { margin:0; padding:0; overflow:hidden; touch-action:none; transition:background 0.5s; }
+    #root { height:100vh; height:100dvh; }
   </style>
 </head>
 <body>
@@ -40,7 +29,6 @@
     const TIME_LIMIT_30 = 30;
     const SUDDEN_DEATH_PER_Q = 5;
 
-    // --- 音声エンジン ---
     let audioCtx = null;
     let isSoundEnabled = true;
 
@@ -49,8 +37,7 @@
       if (audioCtx.state === "suspended") audioCtx.resume();
       return audioCtx;
     }
-
-    function playTone(freq, type = "sine", duration = 0.12, vol = 0.15, delay = 0) {
+    function playTone(freq, type="sine", duration=0.12, vol=0.15, delay=0) {
       if (!isSoundEnabled) return;
       try {
         const ctx = getCtx();
@@ -64,212 +51,222 @@
         osc.start(t); osc.stop(t + duration);
       } catch {}
     }
-
-    const playClick = () => playTone(880, "square", 0.05, 0.05);
-    const playCorrect = () => { playTone(523, "sine", 0.1, 0.2); playTone(659, "sine", 0.1, 0.2, 0.08); playTone(784, "sine", 0.15, 0.25, 0.16); };
-    const playWrong = () => { playTone(200, "sawtooth", 0.08, 0.15); playTone(150, "sawtooth", 0.12, 0.15, 0.08); };
-    const playDigit = () => playTone(660, "triangle", 0.06, 0.08);
+    const playClick   = () => playTone(880,"square",0.05,0.05);
+    const playCorrect = () => { playTone(523,"sine",0.1,0.2); playTone(659,"sine",0.1,0.2,0.08); playTone(784,"sine",0.15,0.25,0.16); };
+    const playWrong   = () => { playTone(200,"sawtooth",0.08,0.15); playTone(150,"sawtooth",0.12,0.15,0.08); };
+    const playDigit   = () => playTone(660,"triangle",0.06,0.08);
     const playCountdown = (n) => {
-      if (n > 0) playTone(440, "sine", 0.15, 0.2);
-      else { playTone(523, "sine", 0.1, 0.25, 0); playTone(659, "sine", 0.1, 0.25, 0.1); playTone(784, "sine", 0.2, 0.25, 0.2); }
+      if (n>0) playTone(440,"sine",0.15,0.2);
+      else { playTone(523,"sine",0.1,0.25,0); playTone(659,"sine",0.1,0.25,0.1); playTone(784,"sine",0.2,0.25,0.2); }
     };
-    const playTimeWarn = () => playTone(880, "square", 0.06, 0.1);
-    const playWin = () => [523,659,784,1047,1319].forEach((f,i) => playTone(f, "sine", 0.2, 0.2, i * 0.1));
+    const playTimeWarn = () => playTone(880,"square",0.06,0.1);
+    const playWin = () => [523,659,784,1047,1319].forEach((f,i)=>playTone(f,"sine",0.2,0.2,i*0.1));
 
-    let bgmRunning = false, bgmStep = 0, bgmTimeout = null, currentBgmType = null;
+    let bgmRunning=false, bgmStep=0, bgmTimeout=null, currentBgmType=null;
     const BGM_DATA = {
-      menu:  { notes: [261, 329, 392, 329], tempo: 400 }, 
-      play1: { notes: [261, 293, 329, 349, 392, 349, 329, 293], tempo: 220 }, 
-      death: { notes: [329, 0, 392, 0, 440, 0, 392, 0], tempo: 150 }, 
+      menu:  { notes:[261,329,392,329],               tempo:400 },
+      play1: { notes:[261,293,329,349,392,349,329,293], tempo:220 },
+      death: { notes:[329,0,392,0,440,0,392,0],        tempo:150 },
     };
-
-    function playBGM(type, force = false) {
+    function playBGM(type, force=false) {
       if (!isSoundEnabled) { stopBGM(); return; }
-      if (!force && currentBgmType === type && bgmRunning) return;
+      if (!force && currentBgmType===type && bgmRunning) return;
       stopBGM();
-      if (!type || !BGM_DATA[type]) return;
-      bgmRunning = true; currentBgmType = type; bgmStep = 0;
+      if (!type||!BGM_DATA[type]) return;
+      bgmRunning=true; currentBgmType=type; bgmStep=0;
       const track = BGM_DATA[type];
       const step = () => {
-        if (!bgmRunning || currentBgmType !== type || !isSoundEnabled || document.hidden) return;
-        const freq = track.notes[bgmStep % track.notes.length];
-        if (freq > 0) playTone(freq, "triangle", track.tempo / 1000 * 0.8, 0.03, 0);
-        bgmStep++; bgmTimeout = setTimeout(step, track.tempo);
+        if (!bgmRunning||currentBgmType!==type||!isSoundEnabled||document.hidden) return;
+        const freq = track.notes[bgmStep%track.notes.length];
+        if (freq>0) playTone(freq,"triangle",track.tempo/1000*0.8,0.03,0);
+        bgmStep++; bgmTimeout=setTimeout(step,track.tempo);
       };
       step();
     }
-    function stopBGM() { bgmRunning = false; currentBgmType = null; if (bgmTimeout) clearTimeout(bgmTimeout); }
+    function stopBGM() { bgmRunning=false; currentBgmType=null; if(bgmTimeout) clearTimeout(bgmTimeout); }
 
     function getBGMType(screen) {
-      if (screen === "top" || screen.includes("menu") || screen.includes("setup") || screen.includes("result")) return "menu";
-      if (screen === "solo-game-death") return "death";
+      if (screen==="top"||screen.includes("menu")||screen.includes("setup")||screen.includes("result")) return "menu";
+      if (screen==="solo-game-death") return "death";
       if (screen.includes("game")) return "play1";
       return null;
     }
 
-    function generateQuestion(level, opType, mainMode, lastQuestion = "") {
+    function generateQuestion(level, opType, mainMode, lastQuestion="") {
       let q;
       do {
-        if (mainMode === "addSub") {
-          const useAdd = opType === "add" ? true : opType === "sub" ? false : Math.random() < 0.5;
-          if (level === 1) {
-            const a = Math.floor(Math.random() * 9) + 1;
-            q = useAdd ? { question: `${a} + ? = 10`, answer: 10 - a } : { question: `10 - ${a} = ?`, answer: 10 - a };
-          } else if (level === 2) {
-            if (useAdd) {
-              const a = Math.floor(Math.random() * 4) + 6, b = Math.floor(Math.random() * 5) + 5;
-              q = { question: `${a} + ${b} = ?`, answer: a + b };
-            } else {
-              const ans = Math.floor(Math.random() * 8) + 2, sub = Math.floor(Math.random() * 7) + 3;
-              q = { question: `${ans + sub} - ${sub} = ?`, answer: ans };
-            }
-          } else if (level === 3) {
-            const a = Math.floor(Math.random() * 25) + 10, b = Math.floor(Math.random() * 15) + 10;
-            q = useAdd ? { question: `${a} + ${b} = ?`, answer: a + b } : { question: `${a+b} - ${a} = ?`, answer: b };
+        if (mainMode==="addSub") {
+          const useAdd = opType==="add"?true:opType==="sub"?false:Math.random()<0.5;
+          if (level===1) {
+            const a=Math.floor(Math.random()*9)+1;
+            q=useAdd?{question:`${a} + ? = 10`,answer:10-a}:{question:`10 - ${a} = ?`,answer:10-a};
+          } else if (level===2) {
+            if (useAdd) { const a=Math.floor(Math.random()*4)+6,b=Math.floor(Math.random()*5)+5; q={question:`${a} + ${b} = ?`,answer:a+b}; }
+            else { const ans=Math.floor(Math.random()*8)+2,sub=Math.floor(Math.random()*7)+3; q={question:`${ans+sub} - ${sub} = ?`,answer:ans}; }
+          } else if (level===3) {
+            const a=Math.floor(Math.random()*25)+10,b=Math.floor(Math.random()*15)+10;
+            q=useAdd?{question:`${a} + ${b} = ?`,answer:a+b}:{question:`${a+b} - ${a} = ?`,answer:b};
           } else {
-            const a = Math.floor(Math.random() * 60) + 20, b = Math.floor(Math.random() * 60) + 20;
-            q = useAdd ? { question: `${a} + ${b} = ?`, answer: a + b } : { question: `${a+b} - ${a} = ?`, answer: b };
+            const a=Math.floor(Math.random()*60)+20,b=Math.floor(Math.random()*60)+20;
+            q=useAdd?{question:`${a} + ${b} = ?`,answer:a+b}:{question:`${a+b} - ${a} = ?`,answer:b};
           }
         } else {
-          const useMul = opType === "mul" ? true : opType === "div" ? false : Math.random() < 0.5;
-          if (level === 1) {
-            const a = Math.floor(Math.random() * 9) + 1, b = Math.floor(Math.random() * 5) + 1;
-            q = useMul ? { question: `${a} × ${b} = ?`, answer: a * b } : { question: `${a * b} ÷ ${b} = ?`, answer: a };
-          } else if (level === 2) {
-            const a = Math.floor(Math.random() * 9) + 1, b = Math.floor(Math.random() * 9) + 1;
-            q = useMul ? { question: `${a} × ${b} = ?`, answer: a * b } : { question: `${a * b} ÷ ${b} = ?`, answer: a };
-          } else if (level === 3) {
-            let a, b;
-            do { a = Math.floor(Math.random() * 89) + 11; b = Math.floor(Math.random() * 8) + 2; } while ((a % 10) * (b % 10) >= 10);
-            q = useMul ? { question: `${a} × ${b} = ?`, answer: a * b } : { question: `${a * b} ÷ ${b} = ?`, answer: a };
+          const useMul=opType==="mul"?true:opType==="div"?false:Math.random()<0.5;
+          if (level===1) {
+            const a=Math.floor(Math.random()*9)+1,b=Math.floor(Math.random()*5)+1;
+            q=useMul?{question:`${a} × ${b} = ?`,answer:a*b}:{question:`${a*b} ÷ ${b} = ?`,answer:a};
+          } else if (level===2) {
+            const a=Math.floor(Math.random()*9)+1,b=Math.floor(Math.random()*9)+1;
+            q=useMul?{question:`${a} × ${b} = ?`,answer:a*b}:{question:`${a*b} ÷ ${b} = ?`,answer:a};
+          } else if (level===3) {
+            let a,b; do{a=Math.floor(Math.random()*89)+11;b=Math.floor(Math.random()*8)+2;}while((a%10)*(b%10)>=10);
+            q=useMul?{question:`${a} × ${b} = ?`,answer:a*b}:{question:`${a*b} ÷ ${b} = ?`,answer:a};
           } else {
-            let a, b;
-            do { a = Math.floor(Math.random() * 89) + 11; b = Math.floor(Math.random() * 8) + 2; } while ((a % 10) * (b % 10) < 10);
-            q = useMul ? { question: `${a} × ${b} = ?`, answer: a * b } : { question: `${a * b} ÷ ${b} = ?`, answer: a };
+            let a,b; do{a=Math.floor(Math.random()*89)+11;b=Math.floor(Math.random()*8)+2;}while((a%10)*(b%10)<10);
+            q=useMul?{question:`${a} × ${b} = ?`,answer:a*b}:{question:`${a*b} ÷ ${b} = ?`,answer:a};
           }
         }
-      } while (q.question === lastQuestion);
+      } while (q.question===lastQuestion);
       return q;
     }
 
-    const RANKS = [
-      { s: 0, l: "見習い" }, { s: 5, l: "10級" }, { s: 10, l: "5級" }, { s: 15, l: "3級" },
-      { s: 20, l: "1級" }, { s: 30, l: "初段" }, { s: 45, l: "五段" }, { s: 60, l: "十段" }
+    const RANKS=[
+      {s:0,l:"見習い"},{s:5,l:"10級"},{s:10,l:"5級"},{s:15,l:"3級"},
+      {s:20,l:"1級"},{s:30,l:"初段"},{s:45,l:"五段"},{s:60,l:"十段"}
     ];
     function getRankLabel(s) {
-      let label = RANKS[0].l;
-      for (let r of RANKS) { if (s >= r.s) label = r.l; else break; }
+      let label=RANKS[0].l;
+      for(let r of RANKS){if(s>=r.s)label=r.l;else break;}
       return label;
     }
 
-    // ─── 日本語キーボード ───
-    // ★修正: カタカナグループを正しく修正
-    const kanaGroupsHira = [
-      ['あ','い','う','え','お'],
-      ['か','き','く','け','こ'],
-      ['さ','し','す','せ','そ'],
-      ['た','ち','つ','て','と'],
-      ['な','に','ぬ','ね','の'],
-      ['は','ひ','ふ','へ','ほ'],
-      ['ま','み','む','め','も'],
-      ['や','（','ゆ','）','よ'],
-      ['ら','り','る','れ','ろ'],
+    const kanaGroupsHira=[
+      ['あ','い','う','え','お'],['か','き','く','け','こ'],['さ','し','す','せ','そ'],
+      ['た','ち','つ','て','と'],['な','に','ぬ','ね','の'],['は','ひ','ふ','へ','ほ'],
+      ['ま','み','む','め','も'],['や','（','ゆ','）','よ'],['ら','り','る','れ','ろ'],
       ['わ','を','ん','ー','　']
     ];
-    const kanaGroupsKata = [
-      ['ア','イ','ウ','エ','オ'],
-      ['カ','キ','ク','ケ','コ'],
-      ['サ','シ','ス','セ','ソ'],
-      ['タ','チ','ツ','テ','ト'],  // ★修正: 'て'→'テ'
-      ['ナ','ニ','ヌ','ネ','ノ'],
-      ['ハ','ヒ','フ','ヘ','ホ'],
-      ['マ','ミ','ム','メ','モ'],  // ★修正: 全てカタカナに
-      ['ヤ','（','ユ','）','ヨ'],
-      ['ラ','リ','ル','レ','ロ'],  // ★修正: 全てカタカナに
+    const kanaGroupsKata=[
+      ['ア','イ','ウ','エ','オ'],['カ','キ','ク','ケ','コ'],['サ','シ','ス','セ','ソ'],
+      ['タ','チ','ツ','テ','ト'],['ナ','ニ','ヌ','ネ','ノ'],['ハ','ヒ','フ','ヘ','ホ'],
+      ['マ','ミ','ム','メ','モ'],['ヤ','（','ユ','）','ヨ'],['ラ','リ','ル','レ','ロ'],
       ['ワ','ヲ','ン','ー','　']
     ];
-
-    // ★修正: 変換マップを清音→濁点→半濁点→清音 の正しい循環に修正
-    const transformMap = {
-      // ひらがな
-      'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご',
-      'さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ',
-      'た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど',
-      'は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ',
-      'が':'か','ぎ':'き','ぐ':'く','げ':'け','ご':'こ',
-      'ざ':'さ','じ':'し','ず':'す','ぜ':'せ','ぞ':'そ',
+    const transformMap={
+      'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご','さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ',
+      'た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど','は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ',
+      'が':'か','ぎ':'き','ぐ':'く','げ':'け','ご':'こ','ざ':'さ','じ':'し','ず':'す','ぜ':'せ','ぞ':'そ',
       'だ':'た','ぢ':'ち','づ':'つ','で':'て','ど':'と',
-      'ば':'ぱ','び':'ぴ','ぶ':'ぷ','べ':'ぺ','ぼ':'ぽ', // ★修正: 濁→半濁
-      'ぱ':'は','ぴ':'ひ','ぷ':'ふ','ぺ':'へ','ぽ':'ほ', // ★修正: 半濁→清
-      'あ':'ぁ','い':'ぃ','う':'ぅ','え':'ぇ','お':'ぉ',
-      'や':'ゃ','ゆ':'ゅ','よ':'ょ','つ':'っ','わ':'ゎ',
-      'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お',
-      'ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ',
-      // カタカナ
-      'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ',
-      'サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ',
-      'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド',
-      'ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ',
-      'ガ':'カ','ギ':'キ','グ':'ク','ゲ':'ケ','ゴ':'コ',
-      'ザ':'サ','ジ':'シ','ズ':'ス','ゼ':'セ','ゾ':'ソ',
+      'ば':'ぱ','び':'ぴ','ぶ':'ぷ','べ':'ぺ','ぼ':'ぽ','ぱ':'は','ぴ':'ひ','ぷ':'ふ','ぺ':'へ','ぽ':'ほ',
+      'あ':'ぁ','い':'ぃ','う':'ぅ','え':'ぇ','お':'ぉ','や':'ゃ','ゆ':'ゅ','よ':'ょ','わ':'ゎ',
+      'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ',
+      'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ',
+      'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ',
+      'ガ':'カ','ギ':'キ','グ':'ク','ゲ':'ケ','ゴ':'コ','ザ':'サ','ジ':'シ','ズ':'ス','ゼ':'セ','ゾ':'ソ',
       'ダ':'タ','ヂ':'チ','ヅ':'ツ','デ':'テ','ド':'ト',
-      'バ':'パ','ビ':'ピ','ブ':'プ','べ':'ペ','ボ':'ポ',
-      'パ':'ハ','ピ':'ヒ','プ':'フ','ペ':'ヘ','ポ':'ホ',
-      'ア':'ァ','イ':'ィ','ウ':'ゥ','エ':'ェ','オ':'ォ',
-      'ヤ':'ャ','ユ':'ュ','ヨ':'ョ','ツ':'ッ','ワ':'ヮ',
-      'ァ':'ア','ィ':'イ','ゥ':'ウ','ェ':'エ','ォ':'オ',
-      'ャ':'ヤ','ュ':'ユ','ョ':'ヨ','ッ':'ツ','ヮ':'ワ',
+      'バ':'パ','ビ':'ピ','ブ':'プ','ベ':'ペ','ボ':'ポ','パ':'ハ','ピ':'ヒ','プ':'フ','ペ':'ヘ','ポ':'ホ',
+      'ア':'ァ','イ':'ィ','ウ':'ゥ','エ':'ェ','オ':'ォ','ヤ':'ャ','ユ':'ュ','ヨ':'ョ','ツ':'ッ','ワ':'ヮ',
+      'ァ':'ア','ィ':'イ','ゥ':'ウ','ェ':'エ','ォ':'オ','ャ':'ヤ','ュ':'ユ','ョ':'ヨ','ッ':'ツ','ヮ':'ワ',
     };
 
-    const JapaneseKeyboard = ({ value, onChange, onSet }) => {
+    const JapaneseKeyboard = ({ value, onChange, onSet, isAddSub }) => {
       const [isKatakana, setIsKatakana] = useState(false);
       const [activeGroup, setActiveGroup] = useState(null);
-      const groupsHira = ["あ","か","さ","た","な","は","ま","や","ら","わ"];
-      const groupsKata = ["ア","カ","サ","タ","ナ","ハ","マ","ヤ","ラ","ワ"];
-      const groupsDisplay = isKatakana ? groupsKata : groupsHira;
+      const groupsDisplay = isKatakana
+        ? ["ア","カ","サ","タ","ナ","ハ","マ","ヤ","ラ","ワ"]
+        : ["あ","か","さ","た","な","は","ま","や","ら","わ"];
       const kanaGroups = isKatakana ? kanaGroupsKata : kanaGroupsHira;
 
+      const accent      = isAddSub ? '#3a8c52' : '#3a72a8';
+      const accentSoft  = isAddSub ? 'rgba(58,140,82,0.12)'  : 'rgba(58,114,168,0.12)';
+      const accentGrad  = isAddSub
+        ? 'linear-gradient(135deg,#5aab6e,#3a8c52)'
+        : 'linear-gradient(135deg,#5a90c8,#3a72a8)';
+      const accentShadow = isAddSub
+        ? '0 3px 12px rgba(58,140,82,0.28)'
+        : '0 3px 12px rgba(58,114,168,0.28)';
+
       const handleChar = (char) => {
-        if (char.trim() === "" && char !== "ー") return; // スペースを除外（ーは許可）
-        if (value.length < 8) onChange(value + char);
+        if (char.trim()===""&&char!=="ー") return;
+        if (value.length<8) onChange(value+char);
         setActiveGroup(null);
       };
-
       const handleTransform = () => {
-        if (value === "") return;
-        const last = value.slice(-1);
-        const next = transformMap[last];
-        if (next) onChange(value.slice(0, -1) + next);
+        if (!value) return;
+        const last=value.slice(-1), next=transformMap[last];
+        if (next) onChange(value.slice(0,-1)+next);
       };
+      const popBtn = {
+        width:46,height:46,borderRadius:10,
+        border:'1px solid rgba(0,0,0,0.10)',
+        background:'white',fontSize:'1.1rem',
+        fontWeight:900,color:'#3a2a00',cursor:'pointer'
+      };
+      const popBtnCenter = { ...popBtn, background:accentSoft, border:`2px solid ${accent}`, color:accent };
 
       return (
-        <div style={{ width:'100%', background:'rgba(255,255,255,0.08)', backdropFilter:'blur(10px)', borderRadius: 20, padding: 12, border:'1px solid rgba(255,255,255,0.15)', marginTop: 10, position: 'relative' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-            {groupsDisplay.map((g, i) => (
-              <div key={i} style={{ position: 'relative' }}>
-                <button onPointerDown={(e) => { e.preventDefault(); setActiveGroup(activeGroup === i ? null : i); }} 
-                  style={{ width:'100%', height: 42, borderRadius: 10, border: activeGroup === i ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.2)', background: activeGroup === i ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)', fontSize:'1rem', fontWeight:900, color:'white', backdropFilter:'blur(5px)' }}>
+        <div style={{
+          width:'100%', background:'rgba(255,255,255,0.55)',
+          backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)',
+          borderRadius:20, padding:12,
+          border:'2px solid rgba(255,255,255,0.72)',
+          marginTop:10, position:'relative',
+          boxShadow:'0 4px 20px rgba(0,0,0,0.08)'
+        }}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6}}>
+            {groupsDisplay.map((g,i)=>(
+              <div key={i} style={{position:'relative'}}>
+                <button
+                  onPointerDown={(e)=>{e.preventDefault();setActiveGroup(activeGroup===i?null:i);}}
+                  style={{
+                    width:'100%',height:42,borderRadius:10,
+                    border:activeGroup===i?`2px solid ${accent}`:'1px solid rgba(0,0,0,0.10)',
+                    background:activeGroup===i?accentSoft:'rgba(255,255,255,0.82)',
+                    fontSize:'1rem',fontWeight:900,color:'#3a2a00',
+                    cursor:'pointer',boxShadow:'0 2px 5px rgba(0,0,0,0.06)'
+                  }}>
                   {g}
                 </button>
-                {activeGroup === i && (
-                  <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -50%)', background:'rgba(15,15,35,0.95)', padding:10, borderRadius:16, display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, border:'1px solid rgba(167,139,250,0.5)', zIndex:2000, boxShadow:'0 8px 32px rgba(0,0,0,0.5)' }}>
-                    <div /><button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][1]); }} style={popStyle}>{kanaGroups[i][1]}</button><div />
-                    <button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][2]); }} style={popStyle}>{kanaGroups[i][2]}</button>
-                    <button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][0]); }} style={{...popStyle, background:'rgba(167,139,250,0.3)', border:'1px solid #a78bfa'}}>{kanaGroups[i][0]}</button>
-                    <button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][3]); }} style={popStyle}>{kanaGroups[i][3]}</button>
-                    <div /><button onPointerDown={(e) => { e.preventDefault(); handleChar(kanaGroups[i][4]); }} style={popStyle}>{kanaGroups[i][4]}</button><div />
+                {activeGroup===i&&(
+                  <div style={{
+                    position:'absolute',top:'50%',left:'50%',
+                    transform:'translate(-50%,-50%)',
+                    background:'rgba(255,255,255,0.98)',
+                    padding:10,borderRadius:16,
+                    display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,
+                    border:`2px solid ${accent}`,zIndex:2000,
+                    boxShadow:'0 8px 32px rgba(0,0,0,0.15)'
+                  }}>
+                    <div/>
+                    <button onPointerDown={(e)=>{e.preventDefault();handleChar(kanaGroups[i][1]);}} style={popBtn}>{kanaGroups[i][1]}</button>
+                    <div/>
+                    <button onPointerDown={(e)=>{e.preventDefault();handleChar(kanaGroups[i][2]);}} style={popBtn}>{kanaGroups[i][2]}</button>
+                    <button onPointerDown={(e)=>{e.preventDefault();handleChar(kanaGroups[i][0]);}} style={popBtnCenter}>{kanaGroups[i][0]}</button>
+                    <button onPointerDown={(e)=>{e.preventDefault();handleChar(kanaGroups[i][3]);}} style={popBtn}>{kanaGroups[i][3]}</button>
+                    <div/>
+                    <button onPointerDown={(e)=>{e.preventDefault();handleChar(kanaGroups[i][4]);}} style={popBtn}>{kanaGroups[i][4]}</button>
+                    <div/>
                   </div>
                 )}
               </div>
             ))}
             {[
-              { label: 'あ/ア', action: () => setIsKatakana(!isKatakana) },
-              { label: '゛゜小', action: handleTransform },
-              { label: '⌫', action: () => onChange(value.slice(0,-1)) },
-              { label: 'OK', action: onSet, highlight: true }
-            ].map((btn, i) => (
-              <button key={i} onPointerDown={(e) => { e.preventDefault(); btn.action(); }}
-                style={{ height: 42, borderRadius: 10, border: btn.highlight ? 'none' : '1px solid rgba(255,255,255,0.2)', background: btn.highlight ? 'linear-gradient(135deg,#a78bfa,#7c3aed)' : 'rgba(255,255,255,0.08)', color:'white', fontSize: btn.label === '⌫' ? '1.2rem' : '0.85rem', fontWeight:900 }}>
+              {label:'あ/ア',action:()=>setIsKatakana(!isKatakana)},
+              {label:'゛゜小',action:handleTransform},
+              {label:'⌫',    action:()=>onChange(value.slice(0,-1))},
+              {label:'OK',   action:onSet,highlight:true}
+            ].map((btn,i)=>(
+              <button key={i}
+                onPointerDown={(e)=>{e.preventDefault();btn.action();}}
+                style={{
+                  height:42,borderRadius:10,
+                  border:btn.highlight?'none':'1px solid rgba(0,0,0,0.10)',
+                  background:btn.highlight?accentGrad:'rgba(255,255,255,0.72)',
+                  color:btn.highlight?'white':'#3a2a00',
+                  fontSize:btn.label==='⌫'?'1.2rem':'0.85rem',
+                  fontWeight:900,cursor:'pointer',
+                  boxShadow:btn.highlight?accentShadow:'0 2px 5px rgba(0,0,0,0.06)'
+                }}>
                 {btn.label}
               </button>
             ))}
@@ -277,16 +274,17 @@
         </div>
       );
     };
-    const popStyle = { width:46, height:46, borderRadius:10, border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.1)', fontSize:'1.1rem', fontWeight:900, color:'white' };
 
     const ToggleButton = ({ options, value, onChange }) => {
-      const idx = options.findIndex(o => o.v === value);
-      const opt = options[idx >= 0 ? idx : 0];
+      const idx = options.findIndex(o=>o.v===value);
+      const opt = options[idx>=0?idx:0];
       return (
-        <button onPointerDown={(e) => { e.preventDefault(); playClick(); onChange(options[(idx + 1) % options.length].v); }} className="toggle-btn" style={{ width: '100%' }}>
+        <button
+          onPointerDown={(e)=>{e.preventDefault();playClick();onChange(options[(idx+1)%options.length].v);}}
+          className="toggle-btn">
           <span className="toggle-arrow">‹</span>
           <div className="toggle-content">
-            {opt.e && <span className="toggle-emoji">{opt.e}</span>}
+            {opt.e&&<span className="toggle-emoji">{opt.e}</span>}
             <span className="toggle-label">{opt.l}</span>
           </div>
           <span className="toggle-arrow">›</span>
@@ -295,32 +293,31 @@
     };
 
     const GlobalMenu = ({ screen, setScreen }) => {
-      const [open, setOpen] = useState(false);
-      const isDuo = screen.startsWith("duo");
-      const isPlay = screen.includes("game") || screen.includes("countdown");
-      const isSetup = screen.includes("setup") || screen === "solo-menu";
-      const handle = (to) => { setOpen(false); setScreen(to); };
-      const toggleFullscreen = () => {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+      const [open,setOpen]=useState(false);
+      const isDuo  =screen.startsWith("duo");
+      const isPlay =screen.includes("game")||screen.includes("countdown");
+      const isSetup=screen.includes("setup")||screen==="solo-menu";
+      const handle=(to)=>{setOpen(false);setScreen(to);};
+      const toggleFullscreen=()=>{
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
         else document.exitFullscreen();
         setOpen(false);
       };
-      const containerStyle = (isDuo && (isPlay || isSetup)) 
-        ? { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", zIndex: 6000 } 
-        : { position: "fixed", top: 12, right: 12, zIndex: 6000 };
-
+      const containerStyle=(isDuo&&(isPlay||isSetup))
+        ?{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",zIndex:6000}
+        :{position:"fixed",top:12,right:12,zIndex:6000};
       return (
         <div style={containerStyle}>
-          {open && <div onPointerDown={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 5999 }} />}
-          <button onPointerDown={(e) => { e.preventDefault(); playClick(); setOpen(!open); }} className="menu-ham-btn">
-            <div className="ham-line" /> <div className="ham-line" /> <div className="ham-line" />
+          {open&&<div onPointerDown={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:5999}}/>}
+          <button onPointerDown={(e)=>{e.preventDefault();playClick();setOpen(!open);}} className="menu-ham-btn">
+            <div className="ham-line"/><div className="ham-line"/><div className="ham-line"/>
           </button>
-          {open && (
-            <div className="menu-dropdown" style={(isDuo && (isPlay || isSetup)) ? { bottom: 55, right: 0 } : { top: 55, right: 0 }}>
-              <div onPointerDown={() => setOpen(false)} className="menu-item">🎮 ゲームにもどる</div>
-              <div onPointerDown={toggleFullscreen} className="menu-item">📺 全画面の切り替え</div>
-              {screen !== "top" && <div onPointerDown={() => handle(isDuo ? "duo-setup" : "solo-menu")} className="menu-item">📝 モード選択へ</div>}
-              <div onPointerDown={() => { stopBGM(); handle("top"); }} className="menu-item menu-item-danger">🏠 タイトルへ</div>
+          {open&&(
+            <div className="menu-dropdown" style={(isDuo&&(isPlay||isSetup))?{bottom:55,right:0}:{top:55,right:0}}>
+              <div onPointerDown={()=>setOpen(false)} className="menu-item">🎮 ゲームにもどる</div>
+              <div onPointerDown={toggleFullscreen}   className="menu-item">📺 全画面の切り替え</div>
+              {screen!=="top"&&<div onPointerDown={()=>handle(isDuo?"duo-setup":"solo-menu")} className="menu-item">📝 モード選択へ</div>}
+              <div onPointerDown={()=>{stopBGM();handle("top");}} className="menu-item menu-item-danger">🏠 タイトルへ</div>
             </div>
           )}
         </div>
@@ -328,15 +325,15 @@
     };
 
     const DigitKeypad = ({ onAnswer, typed, isMini }) => {
-      const size = isMini ? 46 : 58;
-      const fs = isMini ? '1.5rem' : '1.9rem';
+      const size=isMini?46:58, fs=isMini?'1.5rem':'1.9rem';
       return (
-        <div className="digit-row-container" style={{ gap: isMini ? 10 : 16 }}>
-          {[[1,2,3,4,5],[6,7,8,9,0]].map((row, ri) => (
-            <div key={ri} className="digit-row" style={{ gap: isMini ? 8 : 10 }}>
-              {row.map(d => (
-                <button key={d} onPointerDown={(e) => { e.preventDefault(); playDigit(); onAnswer(typed + d); }} 
-                  className="digit-button" style={{ width: size, height: size, fontSize: fs }}>
+        <div className="digit-row-container" style={{gap:isMini?10:16}}>
+          {[[1,2,3,4,5],[6,7,8,9,0]].map((row,ri)=>(
+            <div key={ri} className="digit-row" style={{gap:isMini?8:10}}>
+              {row.map(d=>(
+                <button key={d}
+                  onPointerDown={(e)=>{e.preventDefault();playDigit();onAnswer(typed+d);}}
+                  className="digit-button" style={{width:size,height:size,fontSize:fs}}>
                   {d}
                 </button>
               ))}
@@ -346,313 +343,315 @@
       );
     };
 
-    const GamePanel = ({ isMini, feedback, current, onAnswer, score, typed }) => {
+    const GamePanel = ({ isMini, feedback, current, onAnswer, typed }) => {
       if (!current) return null;
-      const parts = current.question.split("?");
+      const parts=current.question.split("?");
       return (
         <div className="game-panel">
-          <div className={`q-box ${feedback || ""}`} style={{ padding: isMini ? "14px 18px" : "22px 28px", marginBottom: isMini ? "14px" : "28px" }}>
-            <div className="q-text" style={{ fontSize: isMini ? "1.9rem" : "2.5rem" }}>
+          <div className={`q-box ${feedback||""}`}
+            style={{padding:isMini?"14px 18px":"22px 28px",marginBottom:isMini?"14px":"28px"}}>
+            <div className="q-text" style={{fontSize:isMini?"1.9rem":"2.5rem"}}>
               {parts[0]}
-              <span className="ans-slot" style={{ 
-                color: feedback === "correct" ? "#4ade80" : feedback === "wrong" ? "#f87171" : typed ? "#93c5fd" : "rgba(255,255,255,0.3)",
-                borderColor: feedback === "correct" ? "#4ade80" : feedback === "wrong" ? "#f87171" : typed ? "#93c5fd" : "rgba(255,255,255,0.3)"
+              <span className="ans-slot" style={{
+                color:
+                  feedback==="correct"?"#2d7a3a":
+                  feedback==="wrong"  ?"#b83232":
+                  typed               ?"#c05a10":
+                  "rgba(70,45,0,0.28)",
+                borderColor:
+                  feedback==="correct"?"#2d7a3a":
+                  feedback==="wrong"  ?"#b83232":
+                  typed               ?"#c05a10":
+                  "rgba(70,45,0,0.22)"
               }}>
-                {typed || (feedback === "correct" ? current.answer : "?")}
+                {typed||(feedback==="correct"?current.answer:"?")}
               </span>
               {parts[1]}
             </div>
-            {feedback && (
+            {feedback&&(
               <div className="feedback-container">
-                <div className={`fb-icon ${feedback === "correct" ? "fb-pop" : "fb-shake"}`}>
-                  {feedback === "correct" ? "✓" : "✕"}
+                <div className={`fb-icon ${feedback==="correct"?"fb-pop":"fb-shake"}`}>
+                  {feedback==="correct"?"✓":"✕"}
                 </div>
               </div>
             )}
           </div>
-          <DigitKeypad onAnswer={onAnswer} typed={typed} isMini={isMini} />
+          <DigitKeypad onAnswer={onAnswer} typed={typed} isMini={isMini}/>
         </div>
       );
     };
 
-    // ─── 紙吹雪 ───
     const Confetti = () => {
-      const pieces = useRef([...Array(60)].map((_, i) => {
-        const colors = ['#f472b6','#fb923c','#facc15','#4ade80','#60a5fa','#c084fc'];
-        const dur = 3 + Math.random() * 4;
+      const pieces=useRef([...Array(55)].map((_,i)=>{
+        const colors=['#f8a4c8','#f9b87a','#f5d87a','#7ec48a','#7ab4d8','#b09de0','#a8d87a','#f4907a'];
+        const dur=3.5+Math.random()*4;
         return {
-          id: i,
-          x: Math.random() * 100,
-          size: 7 + Math.random() * 9,
-          color: colors[i % colors.length],
-          delay: -Math.random() * dur,
-          duration: dur,
-          rotate: Math.random() * 360,
-          shape: Math.random() > 0.5 ? '50%' : '2px'
+          id:i, x:Math.random()*100, size:7+Math.random()*8,
+          color:colors[i%colors.length],
+          delay:-Math.random()*dur, duration:dur,
+          rotate:Math.random()*360, shape:Math.random()>0.5?'50%':'3px'
         };
       })).current;
-
       return (
-        <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:900, overflow:'hidden' }}>
-          {pieces.map(p => (
+        <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:900,overflow:'hidden'}}>
+          {pieces.map(p=>(
             <div key={p.id} className="confetti" style={{
-              left: p.x + '%',
-              width: p.size,
-              height: p.size,
-              backgroundColor: p.color,
-              borderRadius: p.shape,
-              animationDelay: p.delay + 's',
-              animationDuration: p.duration + 's',
-              transform: `rotate(${p.rotate}deg)`
-            }} />
+              left:p.x+'%',width:p.size,height:p.size,
+              backgroundColor:p.color,borderRadius:p.shape,
+              animationDelay:p.delay+'s',animationDuration:p.duration+'s',
+              transform:`rotate(${p.rotate}deg)`
+            }}/>
           ))}
         </div>
       );
     };
 
-    // ─── タイマーリング ───
-    const TimerRing = ({ time, max }) => {
-      const r = 36;
-      const circ = 2 * Math.PI * r;
-      const pct = time / max;
-      const color = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#facc15' : '#f87171';
+    const TimerRing = ({ time, max, isAddSub }) => {
+      const r=36, circ=2*Math.PI*r, pct=time/max;
+      const color=pct>0.5?(isAddSub?'#3a8c52':'#3a72a8'):pct>0.25?'#c08a20':'#b84040';
       return (
-        <div style={{ position:'relative', width:90, height:90, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <svg width="90" height="90" style={{ position:'absolute', transform:'rotate(-90deg)' }}>
-            <circle cx="45" cy="45" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
-            <circle cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="6"
-              strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
-              style={{ transition:'stroke-dashoffset 0.9s linear, stroke 0.5s' }} strokeLinecap="round" />
+        <div style={{position:'relative',width:90,height:90,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <svg width="90" height="90" style={{position:'absolute',transform:'rotate(-90deg)'}}>
+            <circle cx="45" cy="45" r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="7"/>
+            <circle cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="7"
+              strokeDasharray={circ} strokeDashoffset={circ*(1-pct)}
+              style={{transition:'stroke-dashoffset 0.9s linear,stroke 0.5s'}} strokeLinecap="round"/>
           </svg>
-          <span style={{ color, fontSize:'1.8rem', fontWeight:900, zIndex:1, transition:'color 0.5s' }}>{time}</span>
+          <span style={{color,fontSize:'1.8rem',fontWeight:900,zIndex:1,transition:'color 0.5s'}}>{time}</span>
         </div>
       );
     };
 
     function App() {
-      const [mainMode, setMainMode] = useState("addSub");
-      const [screen, setScreen] = useState("top");
-      const [soundOn, setSoundOn] = useState(true);
-      const [soloLevel, setSoloLevel] = useState(1);
-      const [soloOp, setSoloOp] = useState("add");
-      const [soloScore, setSoloScore] = useState(0);
-      const [soloTime, setSoloTime] = useState(0);
+      const [mainMode,   setMainMode]   = useState("addSub");
+      const [screen,     setScreen]     = useState("top");
+      const [soundOn,    setSoundOn]    = useState(true);
+      const [soloLevel,  setSoloLevel]  = useState(1);
+      const [soloOp,     setSoloOp]     = useState("add");
+      const [soloScore,  setSoloScore]  = useState(0);
+      const [soloTime,   setSoloTime]   = useState(0);
       const [soloFinish, setSoloFinish] = useState(false);
-      const [soloName, setSoloName] = useState("プレイヤー1");
-      const [countdown, setCountdown] = useState(3);
-      const [q1, setQ1] = useState(null);
+      const [soloName,   setSoloName]   = useState("プレイヤー1");
+      const [countdown,  setCountdown]  = useState(3);
+      const [q1,  setQ1]  = useState(null);
       const [fb1, setFb1] = useState(null);
       const [typed1, setTyped1] = useState("");
-      const [p1Name, setP1Name] = useState("プレイヤー1");
-      const [p2Name, setP2Name] = useState("プレイヤー2");
+      const [p1Name,  setP1Name]  = useState("プレイヤー1");
+      const [p2Name,  setP2Name]  = useState("プレイヤー2");
       const [p1Level, setP1Level] = useState(1);
       const [p2Level, setP2Level] = useState(1);
-      const [p1Op, setP1Op] = useState("add");
-      const [p2Op, setP2Op] = useState("add");
+      const [p1Op,    setP1Op]    = useState("add");
+      const [p2Op,    setP2Op]    = useState("add");
       const [p1Score, setP1Score] = useState(0);
       const [p2Score, setP2Score] = useState(0);
       const [duoGoal, setDuoGoal] = useState(10);
-      const [winner, setWinner] = useState(null);
-      const [q2, setQ2] = useState(null);
+      const [winner,  setWinner]  = useState(null);
+      const [q2,  setQ2]  = useState(null);
       const [fb2, setFb2] = useState(null);
       const [typed2, setTyped2] = useState("");
-      const [p1Ready, setP1Ready] = useState(false);
-      const [p2Ready, setP2Ready] = useState(false);
+      const [p1Ready,setP1Ready] = useState(false);
+      const [p2Ready,setP2Ready] = useState(false);
       const [soloKb, setSoloKb] = useState(false);
-      const [p1Kb, setP1Kb] = useState(false);
-      const [p2Kb, setP2Kb] = useState(false);
-      const touchStartX = useRef(0);
-      // ★修正: resultスクリーン遷移時にスコアを保持するためのref
+      const [p1Kb,   setP1Kb]   = useState(false);
+      const [p2Kb,   setP2Kb]   = useState(false);
+      const touchStartX   = useRef(0);
       const finalScoreRef = useRef(0);
 
-      const toggleMainMode = () => {
-        playClick();
-        setMainMode(prev => prev === "addSub" ? "mulDiv" : "addSub");
+      const isAddSub = mainMode === "addSub";
+
+      // ─── カラーパレット（落ち着いた色味）───
+      const palette = isAddSub ? {
+        // 緑系：深みのある柔らかいグリーン
+        bgGrad:      'linear-gradient(145deg, #e8f5e8 0%, #c8e8c8 35%, #a8d4a8 65%, #88c088 100%)',
+        accent:      '#3a8c52',
+        accentDark:  '#2d6e40',
+        accentGrad:  'linear-gradient(135deg,#5aab6e,#3a8c52)',
+        accentShadow:'rgba(58,140,82,0.28)',
+        cardBg:      'rgba(255,255,255,0.52)',
+        cardBorder:  'rgba(255,255,255,0.75)',
+        particle:    'rgba(88,160,88,0.22)',
+        headerBg:    'rgba(255,255,255,0.42)',
+      } : {
+        // 青系：穏やかなスカイブルー
+        bgGrad:      'linear-gradient(145deg, #e8f0fa 0%, #c8d8f0 35%, #a8c0e8 65%, #88a8d8 100%)',
+        accent:      '#3a72a8',
+        accentDark:  '#2d5880',
+        accentGrad:  'linear-gradient(135deg,#5a90c8,#3a72a8)',
+        accentShadow:'rgba(58,114,168,0.28)',
+        cardBg:      'rgba(255,255,255,0.52)',
+        cardBorder:  'rgba(255,255,255,0.75)',
+        particle:    'rgba(88,130,200,0.22)',
+        headerBg:    'rgba(255,255,255,0.42)',
       };
 
-      // ─── サウンド・BGM同期 ───
-      useEffect(() => {
-        isSoundEnabled = soundOn;
-        if (!soundOn) {
-          stopBGM();
-        } else {
-          const bgmType = getBGMType(screen);
-          if (bgmType) playBGM(bgmType, true);
-        }
-      }, [soundOn]);
+      const glassCard = {
+        background:          palette.cardBg,
+        backdropFilter:      'blur(20px)',
+        WebkitBackdropFilter:'blur(20px)',
+        border:              `2px solid ${palette.cardBorder}`,
+        borderRadius:        28,
+        boxShadow:           '0 8px 32px rgba(0,0,0,0.10)',
+      };
 
-      // ★修正: screen変化時のBGM切り替えを独立したeffectで管理
-      useEffect(() => {
+      const toggleMainMode = () => { playClick(); setMainMode(p=>p==="addSub"?"mulDiv":"addSub"); };
+
+      // ─── サウンド制御 ───
+      useEffect(()=>{
+        isSoundEnabled=soundOn;
+        if (!soundOn) { stopBGM(); return; }
+        const t=getBGMType(screen);
+        if (t) playBGM(t,true);
+      },[soundOn]);
+
+      useEffect(()=>{
         if (!soundOn) return;
-        const bgmType = getBGMType(screen);
-        if (bgmType) playBGM(bgmType);
-        else stopBGM();
-      }, [screen]);
+        const t=getBGMType(screen);
+        if (t) playBGM(t); else stopBGM();
+      },[screen]);
 
-      // ブラウザバックグラウンド制御
-      useEffect(() => {
-        const handleVisibility = () => {
-          if (document.hidden) {
-            stopBGM();
-          } else if (soundOn) {
-            const bgmType = getBGMType(screen);
-            if (bgmType) playBGM(bgmType, true);
-          }
+      useEffect(()=>{
+        const fn=()=>{
+          if (document.hidden) { stopBGM(); return; }
+          if (soundOn) { const t=getBGMType(screen); if(t) playBGM(t,true); }
         };
-        document.addEventListener("visibilitychange", handleVisibility);
-        return () => document.removeEventListener("visibilitychange", handleVisibility);
-      }, [soundOn, screen]);
+        document.addEventListener("visibilitychange",fn);
+        return ()=>document.removeEventListener("visibilitychange",fn);
+      },[soundOn,screen]);
 
-      useEffect(() => {
-        const op = mainMode === "addSub" ? "add" : "mul";
+      useEffect(()=>{
+        const op=isAddSub?"add":"mul";
         setSoloOp(op); setP1Op(op); setP2Op(op);
-      }, [mainMode]);
+      },[mainMode]);
 
-      // ★修正: p1Ready/p2Ready両方trueになった瞬間だけstartDuoを呼ぶ
-      useEffect(() => {
-        if (screen === "duo-setup" && p1Ready && p2Ready) {
-          const timer = setTimeout(() => startDuo(), 500);
-          return () => clearTimeout(timer);
+      useEffect(()=>{
+        if (screen==="duo-setup"&&p1Ready&&p2Ready) {
+          const t=setTimeout(()=>startDuo(),500);
+          return ()=>clearTimeout(t);
         }
-      }, [p1Ready, p2Ready]);
+      },[p1Ready,p2Ready]);
 
       // ─── タイマー ───
-      useEffect(() => {
+      useEffect(()=>{
         let itv;
-        if ((screen === "solo-game-time" || screen === "solo-game-death") && !soloFinish) {
-          itv = setInterval(() => {
-            setSoloTime(p => {
-              if (p <= 1) {
-                stopBGM();
-                setSoloFinish(true);
-                setTimeout(() => setScreen(
-                  screen === "solo-game-time" ? "result-solo-time" : "result-solo-death"
-                ), 1000);
+        if ((screen==="solo-game-time"||screen==="solo-game-death")&&!soloFinish) {
+          itv=setInterval(()=>{
+            setSoloTime(p=>{
+              if (p<=1) {
+                stopBGM(); setSoloFinish(true);
+                setTimeout(()=>setScreen(
+                  screen==="solo-game-time"?"result-solo-time":"result-solo-death"
+                ),1000);
                 return 0;
               }
-              if (p <= 3) playTimeWarn();
-              return p - 1;
+              if (p<=3) playTimeWarn();
+              return p-1;
             });
-          }, 1000);
+          },1000);
         }
-        return () => clearInterval(itv);
-      }, [screen, soloFinish]);
+        return ()=>clearInterval(itv);
+      },[screen,soloFinish]);
 
-      // ─── ソロ スタート ───
+      // ─── スタート処理 ───
       const startSoloTime = () => {
-        finalScoreRef.current = 0;
+        finalScoreRef.current=0;
         setSoloScore(0); setTyped1(""); setFb1(null);
         setSoloTime(TIME_LIMIT_30); setSoloFinish(false);
         setCountdown(3); setScreen("solo-countdown-time");
-        let c = 3; playCountdown(c);
-        const t = setInterval(() => {
+        let c=3; playCountdown(c);
+        const t=setInterval(()=>{
           c--;
-          if (c <= 0) {
-            clearInterval(t); playCountdown(0);
-            setQ1(generateQuestion(soloLevel, soloOp, mainMode));
-            setScreen("solo-game-time");
-          } else { setCountdown(c); playCountdown(c); }
-        }, 1000);
+          if (c<=0) { clearInterval(t); playCountdown(0); setQ1(generateQuestion(soloLevel,soloOp,mainMode)); setScreen("solo-game-time"); }
+          else { setCountdown(c); playCountdown(c); }
+        },1000);
       };
 
       const startSoloDeath = () => {
-        finalScoreRef.current = 0;
+        finalScoreRef.current=0;
         setSoloScore(0); setTyped1(""); setFb1(null);
         setSoloTime(SUDDEN_DEATH_PER_Q); setSoloFinish(false);
         setCountdown(3); setScreen("solo-countdown-death");
-        let c = 3; playCountdown(c);
-        const t = setInterval(() => {
+        let c=3; playCountdown(c);
+        const t=setInterval(()=>{
           c--;
-          if (c <= 0) {
-            clearInterval(t); playCountdown(0);
-            setQ1(generateQuestion(1, mainMode === "addSub" ? "add" : "mul", mainMode));
-            setScreen("solo-game-death");
-          } else { setCountdown(c); playCountdown(c); }
-        }, 1000);
+          if (c<=0) { clearInterval(t); playCountdown(0); setQ1(generateQuestion(1,isAddSub?"add":"mul",mainMode)); setScreen("solo-game-death"); }
+          else { setCountdown(c); playCountdown(c); }
+        },1000);
       };
 
       const startDuo = () => {
         setWinner(null); setP1Score(0); setP2Score(0);
         setTyped1(""); setTyped2(""); setFb1(null); setFb2(null);
         setP1Ready(false); setP2Ready(false);
-        setQ1(generateQuestion(p1Level, p1Op, mainMode));
-        setQ2(generateQuestion(p2Level, p2Op, mainMode));
+        setQ1(generateQuestion(p1Level,p1Op,mainMode));
+        setQ2(generateQuestion(p2Level,p2Op,mainMode));
         setCountdown(3); setScreen("duo-countdown");
-        let c = 3; playCountdown(c);
-        const t = setInterval(() => {
+        let c=3; playCountdown(c);
+        const t=setInterval(()=>{
           c--;
-          if (c <= 0) { clearInterval(t); playCountdown(0); setScreen("duo-game"); }
+          if (c<=0) { clearInterval(t); playCountdown(0); setScreen("duo-game"); }
           else { setCountdown(c); playCountdown(c); }
-        }, 1000);
+        },1000);
       };
 
       // ─── 回答ハンドラ ───
       const handleSoloAnsTime = (v) => {
-        if (fb1 || soloFinish || !q1) return;
+        if (fb1||soloFinish||!q1) return;
         setTyped1(v);
-        if (v === String(q1.answer)) {
+        if (v===String(q1.answer)) {
           playCorrect(); setFb1("correct");
-          setSoloScore(s => { finalScoreRef.current = s + 1; return s + 1; });
-          setTimeout(() => {
-            setFb1(null); setTyped1("");
-            setQ1(q => generateQuestion(soloLevel, soloOp, mainMode, q.question));
-          }, 250);
+          setSoloScore(s=>{ finalScoreRef.current=s+1; return s+1; });
+          setTimeout(()=>{ setFb1(null); setTyped1(""); setQ1(q=>generateQuestion(soloLevel,soloOp,mainMode,q.question)); },250);
         } else if (!String(q1.answer).startsWith(v)) {
           playWrong(); setFb1("wrong");
-          setTimeout(() => { setFb1(null); setTyped1(""); }, 400);
+          setTimeout(()=>{ setFb1(null); setTyped1(""); },400);
         }
       };
 
       const handleSoloAnsDeath = (v) => {
-        if (fb1 || soloFinish || !q1) return;
+        if (fb1||soloFinish||!q1) return;
         setTyped1(v);
-        if (v === String(q1.answer)) {
+        if (v===String(q1.answer)) {
           playCorrect(); setFb1("correct");
-          setSoloScore(s => { finalScoreRef.current = s + 1; return s + 1; });
-          setTimeout(() => {
-            setFb1(null); setTyped1("");
-            setSoloTime(SUDDEN_DEATH_PER_Q);
-            setQ1(q => generateQuestion(
-              Math.min(4, Math.floor((finalScoreRef.current) / 10) + 1),
-              mainMode === "addSub" ? "add" : "mul",
-              mainMode, q.question
+          setSoloScore(s=>{ finalScoreRef.current=s+1; return s+1; });
+          setTimeout(()=>{
+            setFb1(null); setTyped1(""); setSoloTime(SUDDEN_DEATH_PER_Q);
+            setQ1(q=>generateQuestion(
+              Math.min(4,Math.floor(finalScoreRef.current/10)+1),
+              isAddSub?"add":"mul",mainMode,q.question
             ));
-          }, 250);
+          },250);
         } else if (!String(q1.answer).startsWith(v)) {
           playWrong(); setFb1("wrong"); setSoloFinish(true); stopBGM();
-          setTimeout(() => setScreen("result-solo-death"), 1000);
+          setTimeout(()=>setScreen("result-solo-death"),1000);
         }
       };
 
-      const handleDuoAns = (p, v) => {
-        if (winner || screen !== "duo-game") return;
-        const target = p === 1 ? q1 : q2;
-        const setT = p === 1 ? setTyped1 : setTyped2;
-        const setS = p === 1 ? setP1Score : setP2Score;
-        const setFb = p === 1 ? setFb1 : setFb2;
-        const curScore = p === 1 ? p1Score : p2Score;
+      const handleDuoAns = (p,v) => {
+        if (winner||screen!=="duo-game") return;
+        const target=p===1?q1:q2;
+        const setT=p===1?setTyped1:setTyped2;
+        const setS=p===1?setP1Score:setP2Score;
+        const setFb=p===1?setFb1:setFb2;
+        const cur=p===1?p1Score:p2Score;
         setT(v);
-        if (v === String(target.answer)) {
+        if (v===String(target.answer)) {
           playCorrect(); setFb("correct");
-          const ns = curScore + 1; setS(ns);
-          if (ns >= duoGoal) {
-            setWinner(p === 1 ? p1Name : p2Name);
-            stopBGM(); playWin();
-            setTimeout(() => setScreen("duo-result"), 1500);
+          const ns=cur+1; setS(ns);
+          if (ns>=duoGoal) {
+            setWinner(p===1?p1Name:p2Name); stopBGM(); playWin();
+            setTimeout(()=>setScreen("duo-result"),1500);
           } else {
-            setTimeout(() => {
+            setTimeout(()=>{
               setFb(null); setT("");
-              (p === 1 ? setQ1 : setQ2)(q => generateQuestion(
-                p === 1 ? p1Level : p2Level,
-                p === 1 ? p1Op : p2Op,
-                mainMode, q.question
+              (p===1?setQ1:setQ2)(q=>generateQuestion(
+                p===1?p1Level:p2Level,p===1?p1Op:p2Op,mainMode,q.question
               ));
-            }, 300);
+            },300);
           }
         } else if (!String(target.answer).startsWith(v)) {
           playWrong(); setFb("wrong");
-          setS(s => Math.max(0, s - 1));
-          setTimeout(() => { setFb(null); setT(""); }, 400);
+          setS(s=>Math.max(0,s-1));
+          setTimeout(()=>{ setFb(null); setT(""); },400);
         }
       };
 
@@ -660,68 +659,52 @@
         stopBGM(); setScreen("top");
         setSoloLevel(1); setDuoGoal(10);
         setSoloKb(false); setP1Kb(false); setP2Kb(false);
-        setP1Ready(false); setP2Ready(false);
-        setWinner(null);
+        setP1Ready(false); setP2Ready(false); setWinner(null);
       };
 
-      const opOptions = mainMode === "addSub"
+      const opOptions = isAddSub
         ? [
-            { v:"both", e:<span className="op-group"><span className="op-add">＋</span><span className="op-sub">－</span></span>, l:"りょうほう" },
-            { v:"add",  e:<span className="op-add">＋</span>, l:"たし算" },
-            { v:"sub",  e:<span className="op-sub">－</span>, l:"ひき算" }
+            {v:"both",e:<span className="op-group"><span className="op-add">＋</span><span className="op-sub">－</span></span>,l:"りょうほう"},
+            {v:"add", e:<span className="op-add">＋</span>,l:"たし算"},
+            {v:"sub", e:<span className="op-sub">－</span>,l:"ひき算"}
           ]
         : [
-            { v:"both", e:<span className="op-group"><span className="op-mul">×</span><span className="op-div">÷</span></span>, l:"りょうほう" },
-            { v:"mul",  e:<span className="op-mul">×</span>, l:"かけ算" },
-            { v:"div",  e:<span className="op-div">÷</span>, l:"わり算" }
+            {v:"both",e:<span className="op-group"><span className="op-mul">×</span><span className="op-div">÷</span></span>,l:"りょうほう"},
+            {v:"mul", e:<span className="op-mul">×</span>,l:"かけ算"},
+            {v:"div", e:<span className="op-div">÷</span>,l:"わり算"}
           ];
 
-      const lvOptions = mainMode === "addSub"
+      const lvOptions = isAddSub
         ? [
-            { v:1, e:"⭐",       l:"10をつくる" },
-            { v:2, e:"⭐⭐",     l:"くり上がり" },
-            { v:3, e:"⭐⭐⭐",   l:"2ケタ計算"  },
-            { v:4, e:"⭐⭐⭐⭐", l:"むずかしい" }
+            {v:1,e:"⭐",       l:"10をつくる"},
+            {v:2,e:"⭐⭐",     l:"くり上がり"},
+            {v:3,e:"⭐⭐⭐",   l:"2ケタ計算"},
+            {v:4,e:"⭐⭐⭐⭐", l:"むずかしい"}
           ]
         : [
-            { v:1, e:"⭐",       l:"１～５の段" },
-            { v:2, e:"⭐⭐",     l:"１～９の段" },
-            { v:3, e:"⭐⭐⭐",   l:"２ケタの段" },
-            { v:4, e:"⭐⭐⭐⭐", l:"むずかしい" }
+            {v:1,e:"⭐",       l:"１～５の段"},
+            {v:2,e:"⭐⭐",     l:"１～９の段"},
+            {v:3,e:"⭐⭐⭐",   l:"２ケタの段"},
+            {v:4,e:"⭐⭐⭐⭐", l:"むずかしい"}
           ];
 
       const isDuo   = screen.startsWith("duo");
-      const isPlay  = screen.includes("game") || screen.includes("countdown");
-      const isSetup = screen.includes("setup") || screen === "solo-menu";
+      const isPlay  = screen.includes("game")||screen.includes("countdown");
+      const isSetup = screen.includes("setup")||screen==="solo-menu";
 
-      const soundToggleStyle = (isDuo && (isPlay || isSetup))
-        ? { position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", zIndex:6000 }
-        : { position:"fixed", top:12, left:12, zIndex:6000 };
-
-      // カードスタイル（グラスモーフィズム）
-      const glassCard = {
-        background: 'rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 28,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-      };
-
-      const isAddSub = mainMode === "addSub";
+      const soundBtnStyle=(isDuo&&(isPlay||isSetup))
+        ?{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",zIndex:6000}
+        :{position:"fixed",top:12,left:12,zIndex:6000};
 
       return (
         <div className="app-root"
-          onPointerDownCapture={() => !audioCtx && getCtx()}
-          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-          onTouchEnd={(e) => {
-            if (screen === "top" && Math.abs(e.changedTouches[0].clientX - touchStartX.current) > 50)
+          onPointerDownCapture={()=>!audioCtx&&getCtx()}
+          onTouchStart={(e)=>{ touchStartX.current=e.touches[0].clientX; }}
+          onTouchEnd={(e)=>{
+            if (screen==="top"&&Math.abs(e.changedTouches[0].clientX-touchStartX.current)>50)
               toggleMainMode();
           }}
-          style={{ background: isAddSub
-            ? 'linear-gradient(135deg,#0f2027,#203a43,#2c5364)'
-            : 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)'
-          }}>
+          style={{background:palette.bgGrad}}>
 
           <style>{`
             .app-root {
@@ -730,77 +713,76 @@
               position:relative; transition:background 0.6s ease;
             }
 
-            /* ─── パーティクル ─── */
+            /* ─── 背景パーティクル ─── */
             .particle {
               position:absolute; border-radius:50%; pointer-events:none;
-              animation: particle-float 6s ease-in-out infinite;
+              animation:particle-float 6s ease-in-out infinite;
             }
+            /* ★修正: opacityを固定（半透明にしない） */
             @keyframes particle-float {
-              0%,100%{ transform:translateY(0) scale(1); opacity:0.15; }
-              50%    { transform:translateY(-30px) scale(1.1); opacity:0.3; }
+              0%,100%{ transform:translateY(0) scale(1);    opacity:0.55; }
+              50%    { transform:translateY(-28px) scale(1.08); opacity:0.55; }
             }
 
             /* ─── タイトル ─── */
             .title-main {
-              font-size:3rem; line-height:1.1; font-weight:900;
-              background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
-              -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-              background-clip:text; text-align:center;
-              filter: drop-shadow(0 2px 12px rgba(255,255,255,0.2));
+              display:inline-block; font-size:2.8rem; line-height:1.25;
+              font-weight:900; color:#2a3a2a;
+              filter:drop-shadow(0 2px 6px rgba(255,255,255,0.7));
+              text-align:center;
             }
             .title-sub {
-              font-size:0.85rem; color:rgba(255,255,255,0.5);
-              text-align:center; margin-top:4px; font-weight:700; letter-spacing:0.05em;
+              font-size:0.82rem; color:rgba(40,55,40,0.52);
+              text-align:center; margin-top:4px; font-weight:800; letter-spacing:0.09em;
             }
 
             /* ─── モードカード ─── */
             .mode-card {
-              background:rgba(255,255,255,0.08);
+              background:rgba(255,255,255,0.52);
               backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-              border:1px solid rgba(255,255,255,0.15);
+              border:2px solid rgba(255,255,255,0.75);
               border-radius:28px;
-              box-shadow:0 8px 32px rgba(0,0,0,0.3);
+              box-shadow:0 8px 32px rgba(0,0,0,0.09);
               padding:25px; text-align:center;
               transition:transform 0.15s, box-shadow 0.15s;
             }
             .mode-card.clickable:active {
-              transform:scale(0.94) translateY(2px);
-              box-shadow:0 2px 12px rgba(0,0,0,0.3);
+              transform:scale(0.93) translateY(2px);
+              box-shadow:0 2px 10px rgba(0,0,0,0.09);
             }
             .mode-card-label {
-              color:rgba(255,255,255,0.9); font-weight:900; font-size:1.1rem; margin-top:6px;
+              color:#2a3a2a; font-weight:900; font-size:1.1rem; margin-top:6px;
             }
 
             /* ─── スタートボタン ─── */
             .start-btn {
               border:none; color:white; font-size:1.1rem; padding:14px 36px;
               border-radius:50px; font-weight:900; cursor:pointer; outline:none;
-              background:linear-gradient(135deg,#a78bfa,#7c3aed);
-              box-shadow:0 4px 20px rgba(124,58,237,0.5);
               transition:transform 0.15s, box-shadow 0.15s;
               font-family:'Nunito','M PLUS Rounded 1c',sans-serif;
             }
-            .start-btn:active { transform:scale(0.96); box-shadow:0 2px 8px rgba(124,58,237,0.3); }
+            .start-btn:active { transform:scale(0.96); }
             .start-btn.secondary {
-              background:rgba(255,255,255,0.1); box-shadow:none;
-              border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.7);
+              background:rgba(255,255,255,0.55) !important;
+              box-shadow:0 2px 8px rgba(0,0,0,0.07) !important;
+              border:2px solid rgba(255,255,255,0.75) !important;
+              color:#555 !important;
             }
 
             /* ─── 数字キーパッド ─── */
             .digit-button {
-              background:rgba(255,255,255,0.1);
-              border:1px solid rgba(255,255,255,0.2);
-              border-radius:50%; color:white;
+              background:rgba(255,255,255,0.68);
+              border:2px solid rgba(255,255,255,0.88);
+              border-radius:50%; color:#2a3000;
               font-family:'Nunito','M PLUS Rounded 1c',sans-serif;
               cursor:pointer; font-weight:900;
               display:flex; align-items:center; justify-content:center; outline:none;
               transition:transform 0.1s, background 0.1s;
-              backdrop-filter:blur(5px);
+              box-shadow:0 4px 12px rgba(0,0,0,0.09);
             }
             .digit-button:active {
-              transform:scale(1.15);
-              background:rgba(167,139,250,0.4);
-              border-color:#a78bfa;
+              transform:scale(1.18);
+              background:rgba(255,255,255,0.92);
             }
             .digit-row-container { display:flex; flex-direction:column; width:100%; align-items:center; }
             .digit-row { display:flex; justify-content:center; width:100%; }
@@ -808,23 +790,24 @@
             /* ─── 問題ボックス ─── */
             .q-box {
               position:relative;
-              background:rgba(255,255,255,0.07);
-              border:1px solid rgba(255,255,255,0.15);
-              border-radius:24px;
-              text-align:center; width:100%; max-width:380px;
-              backdrop-filter:blur(10px);
+              background:rgba(255,255,255,0.62);
+              border:2px solid rgba(255,255,255,0.82);
+              border-radius:24px; text-align:center;
+              width:100%; max-width:380px;
+              backdrop-filter:blur(12px);
+              box-shadow:0 4px 20px rgba(0,0,0,0.07);
               transition:border-color 0.2s, background 0.2s;
             }
             .q-box.correct {
-              border-color:rgba(74,222,128,0.6);
-              background:rgba(74,222,128,0.1);
+              border-color:rgba(58,140,82,0.55);
+              background:rgba(210,240,215,0.75);
             }
             .q-box.wrong {
-              border-color:rgba(248,113,113,0.6);
-              background:rgba(248,113,113,0.1);
+              border-color:rgba(184,50,50,0.50);
+              background:rgba(248,215,215,0.75);
             }
             .q-text {
-              color:white; font-family:'Nunito','M PLUS Rounded 1c',sans-serif;
+              color:#2a2000; font-family:'Nunito','M PLUS Rounded 1c',sans-serif;
               line-height:1.3; font-weight:900;
             }
             .ans-slot {
@@ -836,11 +819,11 @@
             /* ─── レーストラック ─── */
             .race-track {
               height:54px; width:100%;
-              background:rgba(0,0,0,0.4); backdrop-filter:blur(10px);
-              border-top:1px solid rgba(255,255,255,0.1);
-              border-bottom:1px solid rgba(255,255,255,0.1);
-              position:relative; display:flex; align-items:center;
-              z-index:10;
+              background:rgba(255,255,255,0.28);
+              backdrop-filter:blur(10px);
+              border-top:2px solid rgba(255,255,255,0.58);
+              border-bottom:2px solid rgba(255,255,255,0.58);
+              position:relative; display:flex; align-items:center; z-index:10;
             }
             .race-label {
               position:absolute; font-size:0.6rem; font-weight:800; z-index:100;
@@ -850,38 +833,38 @@
             .race-icon {
               position:absolute; transition:left 0.4s cubic-bezier(0.34,1.56,0.64,1);
               font-size:1.25rem; z-index:26;
-              filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+              filter:drop-shadow(0 2px 4px rgba(0,0,0,0.22));
             }
 
             /* ─── ハンバーガーメニュー ─── */
             .menu-ham-btn {
               width:44px; height:44px; border-radius:50%;
-              background:rgba(255,255,255,0.1); backdrop-filter:blur(10px);
-              border:1px solid rgba(255,255,255,0.2); cursor:pointer;
+              background:rgba(255,255,255,0.62); backdrop-filter:blur(10px);
+              border:2px solid rgba(255,255,255,0.82); cursor:pointer;
               display:flex; flex-direction:column; align-items:center; justify-content:center;
-              gap:4px; z-index:6001;
+              gap:4px; z-index:6001; box-shadow:0 3px 10px rgba(0,0,0,0.09);
             }
-            .ham-line { width:20px; height:2px; background:white; border-radius:2px; }
+            .ham-line { width:20px; height:2.5px; background:#3a3a3a; border-radius:2px; }
             .menu-dropdown {
               position:absolute; min-width:220px;
-              background:rgba(15,15,35,0.95); backdrop-filter:blur(20px);
-              border:1px solid rgba(255,255,255,0.15);
+              background:rgba(255,255,255,0.90); backdrop-filter:blur(20px);
+              border:2px solid rgba(255,255,255,0.80);
               border-radius:20px; padding:8px 0;
-              box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:6000;
+              box-shadow:0 8px 32px rgba(0,0,0,0.12); z-index:6000;
             }
             .menu-item {
-              padding:14px 20px; color:rgba(255,255,255,0.85); cursor:pointer;
+              padding:14px 20px; color:#333; cursor:pointer;
               font-size:0.9rem; font-weight:800; text-align:left;
               transition:background 0.15s;
             }
-            .menu-item:active { background:rgba(255,255,255,0.08); }
-            .menu-item-danger { color:#f87171 !important; border-top:1px solid rgba(255,255,255,0.08); }
+            .menu-item:active { background:rgba(0,0,0,0.04); }
+            .menu-item-danger { color:#b83232 !important; border-top:1px solid rgba(0,0,0,0.06); }
 
             /* ─── ゲームパネル ─── */
             .game-panel {
               flex:1; display:flex; flex-direction:column;
-              align-items:center; justify-content:center; width:100%;
-              padding:0 16px;
+              align-items:center; justify-content:center;
+              width:100%; padding:0 16px;
             }
 
             /* ─── フィードバック ─── */
@@ -891,44 +874,46 @@
               border-radius:24px; z-index:10; pointer-events:none;
             }
             .fb-icon { font-size:4rem; font-weight:900; }
-            .fb-pop   { animation:cPop 0.35s cubic-bezier(0.34,1.56,0.64,1); color:#4ade80; }
-            .fb-shake { animation:wShake 0.4s; color:#f87171; }
+            .fb-pop   { animation:cPop 0.35s cubic-bezier(0.34,1.56,0.64,1); color:#2d7a3a; }
+            .fb-shake { animation:wShake 0.4s; color:#b83232; }
 
             /* ─── 入力ボックス ─── */
             .input-box-container {
               position:relative; display:flex; align-items:center; justify-content:center;
-              background:rgba(255,255,255,0.08); backdrop-filter:blur(10px);
-              border:1px solid rgba(255,255,255,0.2);
+              background:rgba(255,255,255,0.62); backdrop-filter:blur(10px);
+              border:2px solid rgba(255,255,255,0.82);
               border-radius:14px; padding:0 44px;
               width:100%; height:52px; cursor:pointer;
+              box-shadow:0 3px 10px rgba(0,0,0,0.06);
               transition:border-color 0.2s;
             }
-            .input-box-container:active { border-color:rgba(167,139,250,0.6); }
-            .input-icon { position:absolute; left:12px; font-size:1.6rem; }
-            .input-val  { font-weight:900; font-size:1.1rem; color:white; text-align:center; }
-            .input-pencil { position:absolute; right:12px; font-size:1rem; top:50%; transform:translateY(-50%); opacity:0.6; }
+            .input-box-container:active { border-color:rgba(0,0,0,0.18); }
+            .input-icon   { position:absolute; left:12px; font-size:1.6rem; }
+            .input-val    { font-weight:900; font-size:1.1rem; color:#2a2000; text-align:center; }
+            .input-pencil { position:absolute; right:12px; font-size:1rem; top:50%; transform:translateY(-50%); opacity:0.45; }
 
             /* ─── トグルボタン ─── */
             .toggle-btn {
-              flex:1;
-              background:rgba(255,255,255,0.08); backdrop-filter:blur(10px);
-              border:1px solid rgba(255,255,255,0.15);
+              flex:1; width:100%;
+              background:rgba(255,255,255,0.58); backdrop-filter:blur(10px);
+              border:2px solid rgba(255,255,255,0.78);
               border-radius:16px; padding:10px 4px; cursor:pointer;
               display:flex; align-items:center; justify-content:space-between;
               outline:none; transition:transform 0.15s, background 0.15s;
+              box-shadow:0 3px 10px rgba(0,0,0,0.06);
             }
-            .toggle-btn:active { transform:scale(0.96); background:rgba(255,255,255,0.12); }
-            .toggle-arrow { color:rgba(255,255,255,0.4); font-weight:900; font-size:1.4rem; }
+            .toggle-btn:active { transform:scale(0.96); background:rgba(255,255,255,0.78); }
+            .toggle-arrow { color:rgba(0,0,0,0.28); font-weight:900; font-size:1.4rem; }
             .toggle-content { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
             .toggle-emoji { font-size:1.5rem; }
-            .toggle-label { font-weight:900; color:rgba(255,255,255,0.9); font-size:0.85rem; white-space:nowrap; }
+            .toggle-label { font-weight:900; color:#2a2000; font-size:0.85rem; white-space:nowrap; }
 
-            /* ─── 演算子色 ─── */
-            .op-add { color:#f9a8d4; font-weight:900; }
-            .op-sub { color:#7dd3fc; font-weight:900; }
-            .op-mul { color:#818cf8; font-weight:900; }
-            .op-div { color:#c084fc; font-weight:900; }
-            .op-group { display:flex; align-items:center; gap:2px; font-size:1.6rem; }
+            /* ─── 演算子色（落ち着いた色） ─── */
+            .op-add { color:#c84820; font-weight:900; font-size:1.6rem; }
+            .op-sub { color:#2060a8; font-weight:900; font-size:1.6rem; }
+            .op-mul { color:#6030a0; font-weight:900; font-size:1.6rem; }
+            .op-div { color:#a05818; font-weight:900; font-size:1.6rem; }
+            .op-group { display:flex; align-items:center; gap:2px; }
 
             /* ─── ステータスボタン（対戦） ─── */
             .status-btn {
@@ -940,12 +925,12 @@
             }
             .status-btn:active { transform:scale(0.97); }
             .status-btn.ready {
-              background:linear-gradient(135deg,#f472b6,#ec4899);
-              box-shadow:0 4px 20px rgba(236,72,153,0.4);
+              background:linear-gradient(135deg,#e07848,#c05820);
+              box-shadow:0 4px 18px rgba(192,88,32,0.35);
             }
             .status-btn.wait {
-              background:linear-gradient(135deg,#4ade80,#22c55e);
-              box-shadow:0 4px 20px rgba(34,197,94,0.4);
+              background:linear-gradient(135deg,#5aab6e,#3a8c52);
+              box-shadow:0 4px 18px rgba(58,140,82,0.32);
             }
 
             /* ─── リザルトオーバーレイ ─── */
@@ -956,48 +941,74 @@
             }
             .result-band {
               width:100%; text-align:center; padding:16px 0;
-              font-size:2rem; font-weight:900;
-              animation:cPop 0.4s;
+              font-size:2rem; font-weight:900; animation:cPop 0.4s;
               backdrop-filter:blur(6px);
             }
 
             /* ─── サウンドボタン ─── */
             .se-toggle-btn {
               width:44px; height:44px; border-radius:50%;
-              background:rgba(255,255,255,0.1); backdrop-filter:blur(10px);
-              border:1px solid rgba(255,255,255,0.2);
+              background:rgba(255,255,255,0.62); backdrop-filter:blur(10px);
+              border:2px solid rgba(255,255,255,0.82);
+              box-shadow:0 3px 10px rgba(0,0,0,0.09);
               font-size:1.3rem; display:flex; align-items:center;
               justify-content:center; cursor:pointer;
               transition:background 0.2s;
             }
-            .se-toggle-btn:active { background:rgba(255,255,255,0.2); }
+            .se-toggle-btn:active { background:rgba(255,255,255,0.88); }
 
             /* ─── スワイプヒント ─── */
             .swipe-hint-text {
-              margin-top:28px; color:rgba(255,255,255,0.45);
-              font-size:0.8rem; font-weight:700; cursor:pointer;
+              margin-top:28px; color:rgba(40,50,40,0.50);
+              font-size:0.8rem; font-weight:800; cursor:pointer;
               padding:8px 20px; border-radius:20px;
-              border:1px solid rgba(255,255,255,0.1);
-              transition:opacity 0.2s, background 0.2s;
+              border:2px solid rgba(255,255,255,0.68);
+              background:rgba(255,255,255,0.32);
+              transition:background 0.2s;
               letter-spacing:0.03em;
             }
-            .swipe-hint-text:active {
-              opacity:1; background:rgba(255,255,255,0.08);
-            }
+            .swipe-hint-text:active { background:rgba(255,255,255,0.58); }
 
             /* ─── カウントダウン ─── */
             .countdown-num {
-              font-size:9rem; color:white; font-weight:900;
-              text-shadow:0 0 40px rgba(167,139,250,0.8);
+              font-size:9rem; font-weight:900; color:#2a3a2a;
+              text-shadow:0 4px 20px rgba(255,255,255,0.7);
               animation:cPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
             }
 
             /* ─── 紙吹雪 ─── */
             @keyframes confetti-fall {
-              0%   { transform:translateY(-5vh) rotate(0deg);   opacity:1; }
+              0%   { transform:translateY(-5vh) rotate(0deg);    opacity:1; }
               100% { transform:translateY(110vh) rotate(720deg); opacity:0; }
             }
             .confetti { position:absolute; animation:confetti-fall linear infinite; }
+
+            /* ─── ソロゲーム ヘッダー ─── */
+            .solo-header {
+              position:absolute; top:0; width:100%;
+              background:rgba(255,255,255,0.42); backdrop-filter:blur(12px);
+              border-bottom:2px solid rgba(255,255,255,0.68);
+              padding:10px 16px;
+              display:flex; align-items:center; justify-content:space-between;
+              z-index:20;
+            }
+            .solo-header-label {
+              color:#2a3a2a; font-weight:900; font-size:0.9rem;
+            }
+            .solo-score-badge {
+              border-radius:20px; padding:4px 14px;
+              font-weight:900; font-size:1rem; color:white;
+            }
+
+            /* ─── リザルト画面 ─── */
+            .result-score {
+              font-size:4.5rem; font-weight:900; color:#2a3a2a;
+              text-shadow:0 2px 8px rgba(255,255,255,0.6);
+            }
+            .result-label {
+              font-size:0.95rem; color:rgba(50,45,0,0.52);
+              font-weight:800; margin-top:-4px;
+            }
 
             /* ─── キーフレーム ─── */
             @keyframes cPop {
@@ -1010,107 +1021,69 @@
               25%    { transform:translateX(-7px); }
               75%    { transform:translateX(7px); }
             }
-            @keyframes particle-float {
-              0%,100%{ transform:translateY(0) scale(1); opacity:0.12; }
-              50%    { transform:translateY(-28px) scale(1.08); opacity:0.25; }
-            }
-            @keyframes shimmer {
-              0%  { background-position:200% center; }
-              100%{ background-position:-200% center; }
-            }
-            @keyframes pulse-ring {
-              0%  { box-shadow:0 0 0 0 rgba(167,139,250,0.4); }
-              70% { box-shadow:0 0 0 12px rgba(167,139,250,0); }
-              100%{ box-shadow:0 0 0 0 rgba(167,139,250,0); }
-            }
-
-            /* ─── ソロゲーム ヘッダー ─── */
-            .solo-header {
-              position:absolute; top:0; width:100%;
-              background:rgba(0,0,0,0.3); backdrop-filter:blur(10px);
-              border-bottom:1px solid rgba(255,255,255,0.08);
-              padding:10px 16px;
-              display:flex; align-items:center; justify-content:space-between;
-              z-index:20;
-            }
-            .solo-header-label {
-              color:rgba(255,255,255,0.7); font-weight:900; font-size:0.9rem;
-            }
-            .solo-score-badge {
-              background:rgba(167,139,250,0.2); border:1px solid rgba(167,139,250,0.4);
-              border-radius:20px; padding:4px 14px;
-              color:#c4b5fd; font-weight:900; font-size:1rem;
-            }
-
-            /* ─── リザルト画面 ─── */
-            .result-score {
-              font-size:4rem; font-weight:900;
-              background:linear-gradient(135deg,#a78bfa,#f472b6);
-              -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-              background-clip:text;
-            }
-            .result-label {
-              font-size:0.9rem; color:rgba(255,255,255,0.5);
-              font-weight:700; margin-top:-4px;
-            }
           `}</style>
 
           {/* ─── 背景パーティクル ─── */}
-          {[...Array(8)].map((_, i) => (
+          {[...Array(8)].map((_,i)=>(
             <div key={i} className="particle" style={{
-              width: 40 + i * 15,
-              height: 40 + i * 15,
-              top: (i * 12 + 5) + '%',
-              left: (i % 2 ? 3 : 88) + '%',
-              background: isAddSub
-                ? `rgba(96,165,250,${0.06 + i * 0.01})`
-                : `rgba(167,139,250,${0.06 + i * 0.01})`,
-              animationDelay: i * 0.7 + 's',
-              animationDuration: (5 + i * 0.5) + 's'
-            }} />
+              width:  40+i*15,
+              height: 40+i*15,
+              top:    (i*12+5)+'%',
+              left:   (i%2?2:87)+'%',
+              background: palette.particle,
+              animationDelay:    i*0.7+'s',
+              animationDuration: (5+i*0.5)+'s'
+            }}/>
           ))}
 
           {/* ─── サウンドボタン ─── */}
-          <div style={soundToggleStyle}>
+          <div style={soundBtnStyle}>
             <button className="se-toggle-btn"
-              onPointerDown={() => { playClick(); setSoundOn(!soundOn); }}>
-              {soundOn ? "🎵" : "🔇"}
+              onPointerDown={()=>{ playClick(); setSoundOn(!soundOn); }}>
+              {soundOn?"🎵":"🔇"}
             </button>
           </div>
 
-          <GlobalMenu screen={screen} setScreen={setScreen} />
+          <GlobalMenu screen={screen} setScreen={setScreen}/>
 
           {/* ════════════════════════════════
               トップ画面
           ════════════════════════════════ */}
-          {screen === "top" && (
-            <div style={{ textAlign:"center", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center" }}>
-              <div style={{ fontSize:"5.5rem", animation:"particle-float 3s infinite", marginBottom:8 }}>
-                {isAddSub ? "🐻" : "🐼"}
+          {screen==="top" && (
+            <div style={{textAlign:"center",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center"}}>
+              {/* ★修正: opacityを固定（半透明にしない） */}
+              <div style={{
+                fontSize:"5.5rem",
+                animation:"particle-float 3s ease-in-out infinite",
+                marginBottom:8,
+                opacity:1
+              }}>
+                {isAddSub?"🐻":"🐼"}
               </div>
               <h1 className="title-main">
+                {/* ★修正: 記号を後ろに配置 */}
                 {isAddSub
-                  ? <><span className="op-add">＋</span>たし算<br/>ひき算<span className="op-sub">－</span></>
-                  : <><span className="op-mul">×</span>かけ算<br/>わり算<span className="op-div">÷</span></>}
+                  ? <>たし算<span className="op-add" style={{fontSize:'4.2rem'}}>＋</span><br/>ひき算<span className="op-sub" style={{fontSize:'4.2rem'}}>－</span></>
+                  : <>かけ算<span className="op-mul" style={{fontSize:'4.2rem'}}>×</span><br/>わり算<span className="op-div" style={{fontSize:'4.2rem'}}>÷</span></>}
               </h1>
               <p className="title-sub">MATH CHALLENGE</p>
 
-              <div style={{ display:"flex", gap:16, justifyContent:"center", marginTop:36 }}>
+              <div style={{display:"flex",gap:16,justifyContent:"center",marginTop:36}}>
                 {[
-                  { icon:"🐥", label:"ひとりで", to:"solo-menu" },
-                  { icon: isAddSub ? "🐻🐹" : "🐼🦊", label:"ふたりで", to:"duo-setup" }
-                ].map(btn => (
+                  {icon:"🐥",label:"ひとりで",to:"solo-menu"},
+                  {icon:isAddSub?"🐻🐹":"🐼🦊",label:"ふたりで",to:"duo-setup"}
+                ].map(btn=>(
                   <div key={btn.to} className="mode-card clickable"
-                    style={{ padding:"22px 28px", minWidth:130 }}
-                    onPointerDown={() => { playClick(); setScreen(btn.to); }}>
-                    <div style={{ fontSize:"3rem" }}>{btn.icon}</div>
+                    style={{padding:"22px 28px",minWidth:130}}
+                    onPointerDown={()=>{ playClick(); setScreen(btn.to); }}>
+                    <div style={{fontSize:"3rem"}}>{btn.icon}</div>
                     <div className="mode-card-label">{btn.label}</div>
                   </div>
                 ))}
               </div>
 
               <div className="swipe-hint-text"
-                onPointerDown={(e) => { e.preventDefault(); toggleMainMode(); }}>
+                onPointerDown={(e)=>{ e.preventDefault(); toggleMainMode(); }}>
                 ‹ スワイプまたはタップで切り替え ›
               </div>
             </div>
@@ -1119,22 +1092,25 @@
           {/* ════════════════════════════════
               ソロ メニュー
           ════════════════════════════════ */}
-          {screen === "solo-menu" && (
-            <div style={{ textAlign:"center", zIndex:10 }}>
-              <h2 style={{ color:"white", fontSize:"1.8rem", marginBottom:28, fontWeight:900 }}>
+          {screen==="solo-menu" && (
+            <div style={{textAlign:"center",zIndex:10}}>
+              <h2 style={{color:"#2a3a2a",fontSize:"1.8rem",marginBottom:28,fontWeight:900,
+                textShadow:"0 2px 8px rgba(255,255,255,0.6)"}}>
                 どちらであそぶ？
               </h2>
-              <div style={{ display:"flex", gap:16, justifyContent:"center" }}>
+              <div style={{display:"flex",gap:16,justifyContent:"center"}}>
                 {[
-                  { icon:"⏱️", label:"30秒モード", sub:"はやおしチャレンジ", to:"solo-setup-time" },
-                  { icon:"🚀", label:"サドンデス",  sub:"ミスしたら終わり", to:"solo-setup-death" }
-                ].map(m => (
+                  {icon:"⏱️",label:"30秒モード",sub:"はやおしチャレンジ",to:"solo-setup-time"},
+                  {icon:"🚀",label:"サドンデス", sub:"ミスしたら終わり",  to:"solo-setup-death"}
+                ].map(m=>(
                   <div key={m.to} className="mode-card clickable"
-                    style={{ padding:"22px 20px", minWidth:140 }}
-                    onPointerDown={() => { playClick(); setScreen(m.to); }}>
-                    <div style={{ fontSize:"3rem" }}>{m.icon}</div>
+                    style={{padding:"22px 20px",minWidth:140}}
+                    onPointerDown={()=>{ playClick(); setScreen(m.to); }}>
+                    <div style={{fontSize:"3rem"}}>{m.icon}</div>
                     <div className="mode-card-label">{m.label}</div>
-                    <div style={{ color:"rgba(255,255,255,0.45)", fontSize:"0.75rem", marginTop:4, fontWeight:700 }}>{m.sub}</div>
+                    <div style={{color:"rgba(40,50,0,0.42)",fontSize:"0.75rem",marginTop:4,fontWeight:700}}>
+                      {m.sub}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1145,32 +1121,32 @@
               ソロ セットアップ
           ════════════════════════════════ */}
           {screen.includes("solo-setup") && (
-            <div style={{ ...glassCard, maxWidth:420, width:"95%", zIndex:10, padding:"28px 24px" }}>
-              <h2 style={{ color:"white", marginBottom:20, fontWeight:900, fontSize:"1.3rem", textAlign:"center" }}>
-                {screen.includes("time") ? "⏱️ 30秒モード" : "🚀 サドンデス"}
+            <div style={{...glassCard,maxWidth:420,width:"95%",zIndex:10,padding:"28px 24px"}}>
+              <h2 style={{color:"#2a3a2a",marginBottom:20,fontWeight:900,fontSize:"1.3rem",textAlign:"center"}}>
+                {screen.includes("time")?"⏱️ 30秒モード":"🚀 サドンデス"}
               </h2>
-              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                <div className="input-box-container" onPointerDown={() => {
-                  if (!soloKb && soloName === "プレイヤー1") setSoloName("");
-                  setSoloKb(!soloKb);
-                }}>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div className="input-box-container"
+                  onPointerDown={()=>{ if(!soloKb&&soloName==="プレイヤー1") setSoloName(""); setSoloKb(!soloKb); }}>
                   <span className="input-icon">🐥</span>
-                  <div className="input-val">{soloName || "　"}</div>
+                  <div className="input-val">{soloName||"　"}</div>
                   <span className="input-pencil">✏️</span>
                 </div>
-
                 {soloKb
-                  ? <JapaneseKeyboard value={soloName} onChange={setSoloName} onSet={() => {
-                      if (!soloName.trim()) setSoloName("プレイヤー1");
-                      setSoloKb(false);
-                    }} />
+                  ? <JapaneseKeyboard value={soloName} onChange={setSoloName} isAddSub={isAddSub}
+                      onSet={()=>{ if(!soloName.trim()) setSoloName("プレイヤー1"); setSoloKb(false); }}/>
                   : <>
-                      <div style={{ display:"flex", gap:8, width:"100%" }}>
-                        <ToggleButton options={opOptions} value={soloOp} onChange={setSoloOp} />
-                        <ToggleButton options={lvOptions} value={soloLevel} onChange={setSoloLevel} />
+                      <div style={{display:"flex",gap:8,width:"100%"}}>
+                        <ToggleButton options={opOptions} value={soloOp} onChange={setSoloOp}/>
+                        <ToggleButton options={lvOptions} value={soloLevel} onChange={setSoloLevel}/>
                       </div>
-                      <button className="start-btn" style={{ marginTop:6, width:"100%" }}
-                        onPointerDown={screen.includes("time") ? startSoloTime : startSoloDeath}>
+                      <button className="start-btn"
+                        style={{
+                          marginTop:6,width:"100%",
+                          background:palette.accentGrad,
+                          boxShadow:`0 4px 20px ${palette.accentShadow}`
+                        }}
+                        onPointerDown={screen.includes("time")?startSoloTime:startSoloDeath}>
                         スタート！
                       </button>
                     </>
@@ -1182,31 +1158,30 @@
           {/* ════════════════════════════════
               対戦 セットアップ
           ════════════════════════════════ */}
-          {screen === "duo-setup" && (
-            <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", zIndex:50 }}>
+          {screen==="duo-setup" && (
+            <div style={{position:"fixed",inset:0,display:"flex",flexDirection:"column",zIndex:50}}>
+
               {/* P2エリア（上・回転） */}
-              <div style={{ flex:1, transform:"rotate(180deg)", display:"flex", alignItems:"center", justifyContent:"center",
-                background:"rgba(0,0,0,0.15)", padding:12 }}>
-                <div style={{ ...glassCard, width:"100%", maxWidth:460, padding:"16px 18px" }}>
-                  <div className="input-box-container" style={{ marginBottom:10 }}
-                    onPointerDown={() => { if (!p2Kb && p2Name === "プレイヤー2") setP2Name(""); setP2Kb(!p2Kb); }}>
-                    <span className="input-icon">{isAddSub ? "🐹" : "🦊"}</span>
-                    <div className="input-val">{p2Name || "　"}</div>
+              <div style={{flex:1,transform:"rotate(180deg)",display:"flex",alignItems:"center",
+                justifyContent:"center",background:"rgba(255,255,255,0.08)",padding:12}}>
+                <div style={{...glassCard,width:"100%",maxWidth:460,padding:"16px 18px"}}>
+                  <div className="input-box-container" style={{marginBottom:10}}
+                    onPointerDown={()=>{ if(!p2Kb&&p2Name==="プレイヤー2") setP2Name(""); setP2Kb(!p2Kb); }}>
+                    <span className="input-icon">{isAddSub?"🐹":"🦊"}</span>
+                    <div className="input-val">{p2Name||"　"}</div>
                     <span className="input-pencil">✏️</span>
                   </div>
                   {p2Kb
-                    ? <JapaneseKeyboard value={p2Name} onChange={setP2Name} onSet={() => {
-                        if (!p2Name.trim()) setP2Name("プレイヤー2");
-                        setP2Kb(false);
-                      }} />
+                    ? <JapaneseKeyboard value={p2Name} onChange={setP2Name} isAddSub={isAddSub}
+                        onSet={()=>{ if(!p2Name.trim()) setP2Name("プレイヤー2"); setP2Kb(false); }}/>
                     : <>
-                        <div style={{ display:"flex", gap:8 }}>
-                          <ToggleButton options={opOptions} value={p2Op} onChange={setP2Op} />
-                          <ToggleButton options={lvOptions} value={p2Level} onChange={setP2Level} />
+                        <div style={{display:"flex",gap:8}}>
+                          <ToggleButton options={opOptions} value={p2Op} onChange={setP2Op}/>
+                          <ToggleButton options={lvOptions} value={p2Level} onChange={setP2Level}/>
                         </div>
-                        <button className={`status-btn ${p2Ready ? "wait" : "ready"}`}
-                          onPointerDown={() => { playClick(); setP2Ready(!p2Ready); }}>
-                          {p2Ready ? "⏳ まってね…" : "✓ けってい！"}
+                        <button className={`status-btn ${p2Ready?"wait":"ready"}`}
+                          onPointerDown={()=>{ playClick(); setP2Ready(!p2Ready); }}>
+                          {p2Ready?"⏳ まってね…":"✓ けってい！"}
                         </button>
                       </>
                   }
@@ -1214,41 +1189,43 @@
               </div>
 
               {/* 中央バー */}
-              <div style={{ height:58, width:"100%", background:"rgba(0,0,0,0.4)",
-                backdropFilter:"blur(10px)", borderTop:"1px solid rgba(255,255,255,0.08)",
-                borderBottom:"1px solid rgba(255,255,255,0.08)",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:16, zIndex:100 }}>
-                <span style={{ color:"rgba(255,255,255,0.5)", fontSize:"0.8rem", fontWeight:700 }}>目標</span>
-                <div style={{ width:180 }}>
+              <div style={{
+                height:58,width:"100%",
+                background:"rgba(255,255,255,0.32)",
+                backdropFilter:"blur(12px)",
+                borderTop:"2px solid rgba(255,255,255,0.68)",
+                borderBottom:"2px solid rgba(255,255,255,0.68)",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:16,zIndex:100
+              }}>
+                <span style={{color:"rgba(40,50,0,0.52)",fontSize:"0.85rem",fontWeight:800}}>目標</span>
+                <div style={{width:180}}>
                   <ToggleButton
                     options={[{v:5,l:"5もん"},{v:10,l:"10もん"},{v:20,l:"20もん"}]}
-                    value={duoGoal} onChange={setDuoGoal} />
+                    value={duoGoal} onChange={setDuoGoal}/>
                 </div>
               </div>
 
               {/* P1エリア（下） */}
-              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center",
-                background:"rgba(255,255,255,0.05)", padding:12 }}>
-                <div style={{ ...glassCard, width:"100%", maxWidth:460, padding:"16px 18px" }}>
-                  <div className="input-box-container" style={{ marginBottom:10 }}
-                    onPointerDown={() => { if (!p1Kb && p1Name === "プレイヤー1") setP1Name(""); setP1Kb(!p1Kb); }}>
-                    <span className="input-icon">{isAddSub ? "🐻" : "🐼"}</span>
-                    <div className="input-val">{p1Name || "　"}</div>
+              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",
+                background:"rgba(255,255,255,0.08)",padding:12}}>
+                <div style={{...glassCard,width:"100%",maxWidth:460,padding:"16px 18px"}}>
+                  <div className="input-box-container" style={{marginBottom:10}}
+                    onPointerDown={()=>{ if(!p1Kb&&p1Name==="プレイヤー1") setP1Name(""); setP1Kb(!p1Kb); }}>
+                    <span className="input-icon">{isAddSub?"🐻":"🐼"}</span>
+                    <div className="input-val">{p1Name||"　"}</div>
                     <span className="input-pencil">✏️</span>
                   </div>
                   {p1Kb
-                    ? <JapaneseKeyboard value={p1Name} onChange={setP1Name} onSet={() => {
-                        if (!p1Name.trim()) setP1Name("プレイヤー1");
-                        setP1Kb(false);
-                      }} />
+                    ? <JapaneseKeyboard value={p1Name} onChange={setP1Name} isAddSub={isAddSub}
+                        onSet={()=>{ if(!p1Name.trim()) setP1Name("プレイヤー1"); setP1Kb(false); }}/>
                     : <>
-                        <div style={{ display:"flex", gap:8 }}>
-                          <ToggleButton options={opOptions} value={p1Op} onChange={setP1Op} />
-                          <ToggleButton options={lvOptions} value={p1Level} onChange={setP1Level} />
+                        <div style={{display:"flex",gap:8}}>
+                          <ToggleButton options={opOptions} value={p1Op} onChange={setP1Op}/>
+                          <ToggleButton options={lvOptions} value={p1Level} onChange={setP1Level}/>
                         </div>
-                        <button className={`status-btn ${p1Ready ? "wait" : "ready"}`}
-                          onPointerDown={() => { playClick(); setP1Ready(!p1Ready); }}>
-                          {p1Ready ? "⏳ まってね…" : "✓ けってい！"}
+                        <button className={`status-btn ${p1Ready?"wait":"ready"}`}
+                          onPointerDown={()=>{ playClick(); setP1Ready(!p1Ready); }}>
+                          {p1Ready?"⏳ まってね…":"✓ けってい！"}
                         </button>
                       </>
                   }
@@ -1261,8 +1238,9 @@
               カウントダウン（ソロ）
           ════════════════════════════════ */}
           {screen.includes("solo-countdown") && (
-            <div style={{ zIndex:100, textAlign:"center" }}>
-              <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"1.8rem", fontWeight:900, marginBottom:8 }}>
+            <div style={{zIndex:100,textAlign:"center"}}>
+              <p style={{color:"#2a3a2a",fontSize:"1.8rem",fontWeight:900,marginBottom:8,
+                textShadow:"0 2px 8px rgba(255,255,255,0.6)"}}>
                 よーい…
               </p>
               <div className="countdown-num" key={countdown}>{countdown}</div>
@@ -1273,35 +1251,37 @@
               ソロ ゲーム
           ════════════════════════════════ */}
           {screen.includes("solo-game") && (
-            <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column",
-              alignItems:"center", justifyContent:"center", position:"relative" }}>
+            <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",
+              alignItems:"center",justifyContent:"center",position:"relative"}}>
 
-              {/* ヘッダー */}
               <div className="solo-header">
                 <div className="solo-header-label">
                   {screen.includes("death")
-                    ? `🚀 ステージ ${Math.min(4, Math.floor(finalScoreRef.current / 10) + 1)}`
+                    ? `🚀 ステージ ${Math.min(4,Math.floor(finalScoreRef.current/10)+1)}`
                     : `🎖️ ${getRankLabel(soloScore)}`}
                 </div>
-                <div className="solo-score-badge">✓ {soloScore}</div>
-                {screen.includes("time") && (
-                  <TimerRing time={soloTime} max={TIME_LIMIT_30} />
-                )}
-                {screen.includes("death") && (
-                  <TimerRing time={soloTime} max={SUDDEN_DEATH_PER_Q} />
-                )}
+                <div className="solo-score-badge"
+                  style={{
+                    background:palette.accentGrad,
+                    boxShadow:`0 3px 12px ${palette.accentShadow}`
+                  }}>
+                  ✓ {soloScore}
+                </div>
+                <TimerRing
+                  time={soloTime}
+                  max={screen.includes("time")?TIME_LIMIT_30:SUDDEN_DEATH_PER_Q}
+                  isAddSub={isAddSub}/>
               </div>
 
               <GamePanel
                 feedback={fb1} current={q1}
-                onAnswer={screen.includes("time") ? handleSoloAnsTime : handleSoloAnsDeath}
-                score={soloScore} typed={typed1}
-              />
+                onAnswer={screen.includes("time")?handleSoloAnsTime:handleSoloAnsDeath}
+                score={soloScore} typed={typed1}/>
 
               {soloFinish && (
                 <div className="result-overlay">
                   <div className="result-band"
-                    style={{ background:"rgba(0,0,0,0.7)", color:"white" }}>
+                    style={{background:"rgba(255,255,255,0.72)",color:"#2a3a2a"}}>
                     そこまで！
                   </div>
                 </div>
@@ -1312,35 +1292,36 @@
           {/* ════════════════════════════════
               対戦 カウントダウン & ゲーム
           ════════════════════════════════ */}
-          {(screen === "duo-game" || screen === "duo-countdown") && (
-            <div style={{ flex:1, width:"100%", display:"flex", flexDirection:"column", zIndex:10 }}>
+          {(screen==="duo-game"||screen==="duo-countdown") && (
+            <div style={{flex:1,width:"100%",display:"flex",flexDirection:"column",zIndex:10}}>
 
               {/* P2エリア（上・回転） */}
-              <div style={{ transform:"rotate(180deg)", flex:1, display:"flex", flexDirection:"column" }}>
-                <div style={{ textAlign:"center", color:"rgba(255,255,255,0.7)",
-                  fontWeight:900, padding:"6px 0", fontSize:"0.9rem",
-                  background:"rgba(0,0,0,0.15)", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
-                  {isAddSub ? "🐹" : "🦊"}&nbsp;{p2Name}
-                  <span style={{ marginLeft:10, color:"#a78bfa", fontSize:"0.85rem" }}>
+              <div style={{transform:"rotate(180deg)",flex:1,display:"flex",flexDirection:"column"}}>
+                <div style={{
+                  textAlign:"center",color:"#2a3a2a",fontWeight:900,
+                  padding:"6px 0",fontSize:"0.9rem",
+                  background:"rgba(255,255,255,0.22)",
+                  borderBottom:"2px solid rgba(255,255,255,0.48)"
+                }}>
+                  {isAddSub?"🐹":"🦊"}&nbsp;{p2Name}
+                  <span style={{marginLeft:10,fontWeight:900,fontSize:"0.9rem",color:palette.accentDark}}>
                     {p2Score}点
                   </span>
                 </div>
-                <div style={{ flex:1, display:"flex", alignItems:"center",
-                  justifyContent:"center", position:"relative" }}>
-                  {screen === "duo-countdown"
+                <div style={{flex:1,display:"flex",alignItems:"center",
+                  justifyContent:"center",position:"relative"}}>
+                  {screen==="duo-countdown"
                     ? <div className="countdown-num" key={"p2-"+countdown}>{countdown}</div>
                     : <GamePanel isMini current={q2} feedback={fb2}
-                        onAnswer={v => handleDuoAns(2, v)} score={p2Score} typed={typed2} />
+                        onAnswer={v=>handleDuoAns(2,v)} score={p2Score} typed={typed2}/>
                   }
                   {winner && (
                     <div className="result-overlay">
                       <div className="result-band" style={{
-                        background: winner === p2Name
-                          ? "rgba(167,139,250,0.85)"
-                          : "rgba(0,0,0,0.7)",
-                        color: "white"
+                        background:winner===p2Name?"rgba(255,255,255,0.78)":"rgba(255,255,255,0.52)",
+                        color:winner===p2Name?palette.accentDark:"rgba(50,45,0,0.48)"
                       }}>
-                        {winner === p2Name ? "🎉 クリア！！" : "🏳️ そこまで…"}
+                        {winner===p2Name?"🎉 クリア！！":"🏳️ そこまで…"}
                       </div>
                     </div>
                   )}
@@ -1350,62 +1331,63 @@
               {/* レーストラック */}
               <div className="race-track">
                 <div className="race-label"
-                  style={{ left:65, background:"rgba(250,204,21,0.9)", color:"#78350f" }}>
+                  style={{left:65,background:"rgba(210,175,40,0.88)",color:"#5a3800"}}>
                   START
                 </div>
                 <div className="race-label"
-                  style={{ right:65, background:"rgba(248,113,113,0.9)", color:"white" }}>
+                  style={{right:65,background:"rgba(184,60,60,0.88)",color:"white"}}>
                   GOAL!
                 </div>
-                <div style={{ position:"absolute", left:140, right:140, top:0, bottom:0 }}>
-                  {[...Array(duoGoal + 1)].map((_, i) => (
+                <div style={{position:"absolute",left:140,right:140,top:0,bottom:0}}>
+                  {[...Array(duoGoal+1)].map((_,i)=>(
                     <div key={i} style={{
-                      position:"absolute", height:"100%", width:1,
-                      background:"rgba(255,255,255,0.1)",
-                      left:`${(i / duoGoal) * 100}%`
-                    }} />
+                      position:"absolute",height:"100%",width:1,
+                      background:"rgba(255,255,255,0.32)",
+                      left:`${(i/duoGoal)*100}%`
+                    }}/>
                   ))}
                   <div className="race-icon" style={{
-                    left:`${(p2Score / duoGoal) * 100}%`,
-                    top:"3%", transform:"translateX(-50%) rotate(180deg)"
+                    left:`${(p2Score/duoGoal)*100}%`,
+                    top:"3%",transform:"translateX(-50%) rotate(180deg)"
                   }}>
-                    {isAddSub ? "🐹" : "🦊"}
+                    {isAddSub?"🐹":"🦊"}
                   </div>
                   <div className="race-icon" style={{
-                    left:`${(p1Score / duoGoal) * 100}%`,
-                    top:"48%", transform:"translateX(-50%)"
+                    left:`${(p1Score/duoGoal)*100}%`,
+                    top:"48%",transform:"translateX(-50%)"
                   }}>
-                    {isAddSub ? "🐻" : "🐼"}
+                    {isAddSub?"🐻":"🐼"}
                   </div>
                 </div>
               </div>
 
               {/* P1エリア（下） */}
-              <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
-                <div style={{ textAlign:"center", color:"rgba(255,255,255,0.7)",
-                  fontWeight:900, padding:"6px 0", fontSize:"0.9rem",
-                  background:"rgba(255,255,255,0.04)", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-                  {isAddSub ? "🐻" : "🐼"}&nbsp;{p1Name}
-                  <span style={{ marginLeft:10, color:"#a78bfa", fontSize:"0.85rem" }}>
+              <div style={{flex:1,display:"flex",flexDirection:"column"}}>
+                <div style={{
+                  textAlign:"center",color:"#2a3a2a",fontWeight:900,
+                  padding:"6px 0",fontSize:"0.9rem",
+                  background:"rgba(255,255,255,0.18)",
+                  borderTop:"2px solid rgba(255,255,255,0.48)"
+                }}>
+                  {isAddSub?"🐻":"🐼"}&nbsp;{p1Name}
+                  <span style={{marginLeft:10,fontWeight:900,fontSize:"0.9rem",color:palette.accentDark}}>
                     {p1Score}点
                   </span>
                 </div>
-                <div style={{ flex:1, display:"flex", alignItems:"center",
-                  justifyContent:"center", position:"relative" }}>
-                  {screen === "duo-countdown"
+                <div style={{flex:1,display:"flex",alignItems:"center",
+                  justifyContent:"center",position:"relative"}}>
+                  {screen==="duo-countdown"
                     ? <div className="countdown-num" key={"p1-"+countdown}>{countdown}</div>
                     : <GamePanel isMini current={q1} feedback={fb1}
-                        onAnswer={v => handleDuoAns(1, v)} score={p1Score} typed={typed1} />
+                        onAnswer={v=>handleDuoAns(1,v)} score={p1Score} typed={typed1}/>
                   }
                   {winner && (
                     <div className="result-overlay">
                       <div className="result-band" style={{
-                        background: winner === p1Name
-                          ? "rgba(167,139,250,0.85)"
-                          : "rgba(0,0,0,0.7)",
-                        color: "white"
+                        background:winner===p1Name?"rgba(255,255,255,0.78)":"rgba(255,255,255,0.52)",
+                        color:winner===p1Name?palette.accentDark:"rgba(50,45,0,0.48)"
                       }}>
-                        {winner === p1Name ? "🎉 クリア！！" : "🏳️ そこまで…"}
+                        {winner===p1Name?"🎉 クリア！！":"🏳️ そこまで…"}
                       </div>
                     </div>
                   )}
@@ -1419,12 +1401,15 @@
           ════════════════════════════════ */}
           {screen.includes("result") && (
             <>
-              <Confetti />
-              <div style={{ ...glassCard, width:"92%", maxWidth:400,
-                zIndex:1000, animation:"cPop 0.4s", padding:"36px 28px",
-                textAlign:"center" }}>
-                <div style={{ fontSize:"4.5rem", marginBottom:8 }}>🏆</div>
-                <h2 style={{ color:"white", fontSize:"1.6rem", fontWeight:900, marginBottom:20 }}>
+              <Confetti/>
+              <div style={{
+                ...glassCard,
+                width:"92%",maxWidth:400,
+                zIndex:1000,animation:"cPop 0.4s",
+                padding:"36px 28px",textAlign:"center"
+              }}>
+                <div style={{fontSize:"4.5rem",marginBottom:8}}>🏆</div>
+                <h2 style={{color:"#2a3a2a",fontSize:"1.6rem",fontWeight:900,marginBottom:20}}>
                   結果発表
                 </h2>
 
@@ -1432,32 +1417,33 @@
                   ? <>
                       <div className="result-score">{finalScoreRef.current}</div>
                       <div className="result-label">もん せいかい</div>
-                      <div style={{ color:"rgba(255,255,255,0.55)", fontSize:"0.9rem",
-                        marginTop:10, fontWeight:700 }}>
+                      <div style={{color:"rgba(40,50,0,0.52)",fontSize:"0.9rem",marginTop:10,fontWeight:800}}>
                         🎖️ {getRankLabel(finalScoreRef.current)}
                       </div>
                     </>
                   : <>
-                      <div style={{ color:"#a78bfa", fontSize:"1.6rem",
-                        fontWeight:900, marginBottom:4 }}>
+                      <div style={{fontSize:"1.6rem",fontWeight:900,marginBottom:4,color:palette.accentDark}}>
                         {winner}
                       </div>
                       <div className="result-label">のかち！</div>
-                      <div style={{ display:"flex", justifyContent:"center",
-                        gap:24, marginTop:12 }}>
-                        <div style={{ color:"rgba(255,255,255,0.6)", fontWeight:800, fontSize:"0.9rem" }}>
+                      <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:12}}>
+                        <div style={{color:"rgba(50,45,0,0.58)",fontWeight:800,fontSize:"0.9rem"}}>
                           {p1Name}：{p1Score}点
                         </div>
-                        <div style={{ color:"rgba(255,255,255,0.6)", fontWeight:800, fontSize:"0.9rem" }}>
+                        <div style={{color:"rgba(50,45,0,0.58)",fontWeight:800,fontSize:"0.9rem"}}>
                           {p2Name}：{p2Score}点
                         </div>
                       </div>
                     </>
                 }
 
-                <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:28 }}>
+                <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:28}}>
                   <button className="start-btn"
-                    onPointerDown={() => {
+                    style={{
+                      background:palette.accentGrad,
+                      boxShadow:`0 4px 20px ${palette.accentShadow}`
+                    }}
+                    onPointerDown={()=>{
                       screen.includes("time")  ? startSoloTime()  :
                       screen.includes("death") ? startSoloDeath() :
                       startDuo();
@@ -1477,7 +1463,7 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    root.render(<App/>);
   </script>
 </body>
 </html>
