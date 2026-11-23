@@ -2128,7 +2128,13 @@
             // けっか（タップでウインドウ →「もう一回！」「えらびなおす」）
             const resultArea = (p) => { const P = PL[p], won = winner===p; return (
               <div className="duo-result-area"
-                onPointerDown={()=>{ if (!resOpen[p] && performance.now()-overAt.current > 700) { playClick(); setResOpen(o=>({ ...o, [p]:true })); } }}>
+                onPointerDown={()=>{
+                  if (resOpen[p] || performance.now()-overAt.current <= 700) return;
+                  playClick();
+                  // 相手がもうモード選択にいるなら、タップでそのままモード選択へ
+                  if (duoView[p===1?2:1]==="setup") setDuoView(v=>({ ...v, [p]:"setup" }));
+                  else setResOpen(o=>({ ...o, [p]:true }));
+                }}>
                 <div className="result-band" style={{
                   background:won?"rgba(255,255,255,0.82)":"rgba(255,255,255,0.55)",
                   color:won?palette.accentDark:"rgba(30,35,0,0.50)"
@@ -2146,7 +2152,12 @@
                       {P.ready?"⏳ まってね":"もう一回！"}
                     </button>
                     <button className="start-btn secondary"
-                      onPointerDown={e=>{ e.preventDefault(); playClick(); setP1Ready(false); setP2Ready(false); setDuoView({1:"setup",2:"setup"}); }}>
+                      onPointerDown={e=>{
+                        e.preventDefault(); playClick(); setP1Ready(false); setP2Ready(false);
+                        // 相手がまだ「クリア／そこまで…」を見ている（タップ前）なら、相手はそのまま
+                        const o = p===1?2:1;
+                        setDuoView(v=>({ ...v, [p]:"setup", [o]: resOpen[o] ? "setup" : v[o] }));
+                      }}>
                       えらびなおす
                     </button>
                   </div>
